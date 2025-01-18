@@ -22,7 +22,7 @@ public class Camera : NetworkBehaviour
     void Update()
     {
         Vector2 moveValue = _moveAction.ReadValue<Vector2>();
-        transform.position -= new Vector3(moveValue.x, 0, moveValue.y) * MoveSpeed * Time.deltaTime;
+        transform.position += new Vector3(moveValue.x, 0, moveValue.y) * MoveSpeed * Time.deltaTime;
 
         float zoomValue = _zoomAction.ReadValue<float>();
         if (zoomValue > 0)
