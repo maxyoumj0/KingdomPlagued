@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
-public class Camera : NetworkBehaviour
+public class PlayerCamera : NetworkBehaviour
 {
     public float MoveSpeed = 5.0f;
     public int ZoomLevel = 5;
