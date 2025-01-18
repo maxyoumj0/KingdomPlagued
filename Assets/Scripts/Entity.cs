@@ -1,25 +1,38 @@
-using Unity.Netcode;
 using UnityEngine;
+using Unity.Netcode;
 
-public abstract class Entity : NetworkBehaviour
+public class Entity : NetworkBehaviour
 {
-    public Vector3 Position { get; set; }
-    public bool IsSelected { get; private set; }
-    public int MaxHealth;
-    public int CurHealth;
+    public NetworkVariable<bool> IsSelected = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    // add player network variable
+    private NetworkVariable<GameObject> _selectionMarker;
 
-    public virtual void Select(Color playerColor)
+    private void Awake()
     {
-        IsSelected = true;
-        
+        // Find the selection marker in the hierarchy
+        _selectionMarker = new(transform.Find("P_SelectionMarker")?.gameObject);
+        if (_selectionMarker != null)
+        {
+            _selectionMarker.Value.SetActive(false);
+        }
     }
 
-    public virtual void Deselect()
+    public override void OnNetworkSpawn()
     {
-        IsSelected = false;
-        // Remove visual mark.
+        IsSelected.OnValueChanged += OnSelectionChanged;
     }
 
-    // Method to initialize entity data.
-    public abstract void Initialize();
+    private void OnSelectionChanged(bool oldValue, bool newValue)
+    {
+        if (_selectionMarker != null)
+        {
+            _selectionMarker.Value.SetActive(newValue);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void SetSelectedServerRpc(bool selected) // add another parameter for player
+    {
+        IsSelected.Value = selected;
+    }
 }
