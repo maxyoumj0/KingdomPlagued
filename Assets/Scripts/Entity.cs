@@ -3,17 +3,23 @@ using Unity.Netcode;
 
 public class Entity : NetworkBehaviour
 {
-    public NetworkVariable<bool> IsSelected = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    // add player network variable
-    private NetworkVariable<GameObject> _selectionMarker;
+    // Network variable to track selection status
+    public NetworkVariable<bool> IsSelected = new(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private GameObject _selectionMarker;
 
     private void Awake()
     {
         // Find the selection marker in the hierarchy
-        _selectionMarker = new(transform.Find("P_SelectionMarker")?.gameObject);
+        _selectionMarker = transform.Find("P_SelectionMarker")?.gameObject;
+
         if (_selectionMarker != null)
         {
-            _selectionMarker.Value.SetActive(false);
+            _selectionMarker.SetActive(false);
         }
     }
 
@@ -26,13 +32,14 @@ public class Entity : NetworkBehaviour
     {
         if (_selectionMarker != null)
         {
-            _selectionMarker.Value.SetActive(newValue);
+            _selectionMarker.SetActive(newValue);
         }
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void SetSelectedServerRpc(bool selected) // add another parameter for player
+    public void SetSelectedServerRpc(bool selected)
     {
+        // Only the server updates the NetworkVariable
         IsSelected.Value = selected;
     }
 }

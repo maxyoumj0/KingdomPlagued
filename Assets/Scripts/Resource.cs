@@ -5,11 +5,6 @@ public class Resource : Entity
     public int RemainingQuantity { get; private set; }
     public ResourceType ResourceType { get; set; } // Enum for resource types.
 
-    public override void Initialize()
-    {
-        // Initialize resource-specific data.
-    }
-
     public void Harvest(int amount)
     {
         RemainingQuantity -= amount;

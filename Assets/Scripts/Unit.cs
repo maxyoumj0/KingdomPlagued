@@ -15,9 +15,4 @@ public class Unit : Entity
     {
         // Attack logic.
     }
-
-    public override void Initialize()
-    {
-        // Set up default stats or custom logic for units.
-    }
 }
