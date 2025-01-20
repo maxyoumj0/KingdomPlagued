@@ -81,7 +81,10 @@ public class PlayerSelection : NetworkBehaviour
             if (_isDragging)
             {
                 _selectionEnd = Mouse.current.position.ReadValue();
-                PerformSelectionBox();
+                if (_player.SelectedEntities.Count == 0)
+                {
+                    ClearSelectionServerRpc();
+                }
             }
             else if (!_isClickProcessed)
             {
@@ -110,34 +113,49 @@ public class PlayerSelection : NetworkBehaviour
 
         _selectionBox.position = center;
         _selectionBox.sizeDelta = size;
-    }
 
-    private void PerformSelectionBox()
-    {
-        Rect selectionRect = new Rect(
-            Mathf.Min(_selectionStart.x, _selectionEnd.x),
-            Mathf.Min(_selectionStart.y, _selectionEnd.y),
-            Mathf.Abs(_selectionEnd.x - _selectionStart.x),
-            Mathf.Abs(_selectionEnd.y - _selectionStart.y)
-        );
-
-        List<Entity> entities = new();
+        Rect selectionRect = GetSelectionRect();
         foreach (Entity entity in FindObjectsByType<Entity>(FindObjectsSortMode.None))
         {
             Vector3 screenPosition = _playerCamera.WorldToScreenPoint(entity.transform.position);
 
             if (selectionRect.Contains(screenPosition))
             {
-                Debug.Log("HIT");
-                entities.Add(entity);
                 SelectEntityServerRpc(entity.NetworkObject);
             }
         }
+    }
 
-        if (entities.Count == 0)
+    private Rect GetSelectionRect()
+    {
+        Rect selectionRect = new();
+        if (_selectionEnd.x < _selectionStart.x)
         {
-            ClearSelectionServerRpc();
+            // dragging left
+            selectionRect.xMin = _selectionEnd.x;
+            selectionRect.xMax = _selectionStart.x;
         }
+        else
+        {
+            // dragging right
+            selectionRect.xMin = _selectionStart.x;
+            selectionRect.xMax = _selectionEnd.x;
+        }
+
+        if (_selectionEnd.y < _selectionStart.y)
+        {
+            // dragging down
+            selectionRect.yMin = _selectionEnd.y;
+            selectionRect.yMax = _selectionStart.y;
+        }
+        else
+        {
+            // dragging up
+            selectionRect.yMin = _selectionStart.y;
+            selectionRect.yMax = _selectionEnd.y;
+        }
+
+        return selectionRect;
     }
 
     private void SelectEntityUnderCursor()
@@ -148,7 +166,6 @@ public class PlayerSelection : NetworkBehaviour
             var entity = hit.collider.GetComponent<Entity>();
             if (entity != null)
             {
-                Debug.Log("SelectEntityUnderCursor HIT");
                 SelectEntityServerRpc(entity.NetworkObject);
             }
         }

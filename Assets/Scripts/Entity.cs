@@ -40,7 +40,6 @@ public class Entity : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SetSelectedServerRpc(bool selected, ServerRpcParams serverRpcParams = default)
     {
-        Debug.Log("ENTITY SELECTED!");
         SelectedByClientID.Value = serverRpcParams.Receive.SenderClientId;
         IsSelected.Value = selected;
     }
