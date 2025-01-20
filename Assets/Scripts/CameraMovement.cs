@@ -11,14 +11,12 @@ public class PlayerCamera : NetworkBehaviour
     private InputAction _moveAction;
     private InputAction _zoomAction;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         _moveAction = InputSystem.actions.FindAction("Move");
         _zoomAction = InputSystem.actions.FindAction("Zoom");
     }
 
-    // Update is called once per frame
     void Update()
     {
         Vector2 moveValue = _moveAction.ReadValue<Vector2>();

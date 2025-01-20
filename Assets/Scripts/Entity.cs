@@ -10,6 +10,7 @@ public class Entity : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    public NetworkVariable<int> SelectedBy;
     private GameObject _selectionMarker;
 
     private void Awake()

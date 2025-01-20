@@ -24,7 +24,7 @@ public class MapManager : NetworkBehaviour
     {
         if (IsServer)
         {
-            GenerateMap(); // Only the server generates the map.
+            //GenerateMap(); // Only the server generates the map.
         }
         else
         {

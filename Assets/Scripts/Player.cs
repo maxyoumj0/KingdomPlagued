@@ -3,11 +3,10 @@ using Unity.Netcode;
 
 public class Player : NetworkBehaviour
 {
-    // Network variables for shared data
     public NetworkVariable<Vector3> CursorLocation;
     public NetworkVariable<Color> PlayerColor;
+    public NetworkVariable<int> PlayerID;
 
-    // Non-networked properties for local player use
     public GameObject PlayerCamera;
 
     private void Awake()

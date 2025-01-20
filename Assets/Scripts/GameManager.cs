@@ -7,7 +7,7 @@ public class GameManager : NetworkBehaviour
 {
     private NetworkManager m_NetworkManager;
 
-    private Dictionary<ulong, Player> _players = new();
+    //private Dictionary<ulong, Player> _players = new();
 
     void Awake()
     {
@@ -18,24 +18,24 @@ public class GameManager : NetworkBehaviour
     {
         if (IsServer)
         {
-            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+            //NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
     }
 
-    void OnGUI()
-    {
-        GUILayout.BeginArea(new Rect(10, 10, 300, 300));
-        if (!m_NetworkManager.IsClient && !m_NetworkManager.IsServer)
-        {
-            StartButtons();
-        }
-        else
-        {
-            StatusLabels();
-        }
+    //void OnGUI()
+    //{
+    //    GUILayout.BeginArea(new Rect(10, 10, 300, 300));
+    //    if (!m_NetworkManager.IsClient && !m_NetworkManager.IsServer)
+    //    {
+    //        StartButtons();
+    //    }
+    //    else
+    //    {
+    //        StatusLabels();
+    //    }
 
-        GUILayout.EndArea();
-    }
+    //    GUILayout.EndArea();
+    //}
 
     void StartButtons()
     {
@@ -54,29 +54,29 @@ public class GameManager : NetworkBehaviour
         GUILayout.Label("Mode: " + mode);
     }
 
-    public void RegisterPlayer(ulong clientId, Player player)
-    {
-        if (!_players.ContainsKey(clientId))
-        {
-            _players.Add(clientId, player);
-        }
-    }
+    //public void RegisterPlayer(ulong clientId, Player player)
+    //{
+    //    if (!_players.ContainsKey(clientId))
+    //    {
+    //        _players.Add(clientId, player);
+    //    }
+    //}
 
-    public void UnregisterPlayer(ulong clientId)
-    {
-        if (_players.ContainsKey(clientId))
-        {
-            _players.Remove(clientId);
-        }
-    }
+    //public void UnregisterPlayer(ulong clientId)
+    //{
+    //    if (_players.ContainsKey(clientId))
+    //    {
+    //        _players.Remove(clientId);
+    //    }
+    //}
 
-    public Player GetPlayer(ulong clientId)
-    {
-        return _players.TryGetValue(clientId, out var player) ? player : null;
-    }
+    //public Player GetPlayer(ulong clientId)
+    //{
+    //    return _players.TryGetValue(clientId, out var player) ? player : null;
+    //}
 
-    private void OnClientDisconnected(ulong clientId)
-    {
-        UnregisterPlayer(clientId);
-    }
+    //private void OnClientDisconnected(ulong clientId)
+    //{
+    //    UnregisterPlayer(clientId);
+    //}
 }
