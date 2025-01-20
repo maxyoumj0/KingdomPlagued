@@ -17,7 +17,6 @@ public class PlayerSelection : NetworkBehaviour
     private Vector2 _selectionEnd;
     private RectTransform _selectionBox;
     private bool _isDragging = false;
-    private bool _isClickProcessed = false;
 
     private void Start()
     {
@@ -54,7 +53,7 @@ public class PlayerSelection : NetworkBehaviour
         {
             _selectionStart = Mouse.current.position.ReadValue();
             _isDragging = false;
-            _isClickProcessed = false;
+            ClearSelectionServerRpc();
         }
 
         if (_leftClickAction.IsPressed())
@@ -65,34 +64,28 @@ public class PlayerSelection : NetworkBehaviour
             {
                 _isDragging = true;
                 _selectionEnd = curMousePos;
-                UpdateSelectionBox();
                 if (_selectionBox != null)
                 {
                     _selectionBox.gameObject.SetActive(true);
                 }
+                UpdateSelectionBox();
             }
         }
 
         if (_leftClickAction.WasReleasedThisFrame())
         {
             _selectionEnd = Mouse.current.position.ReadValue();
-            _isDragging = false;
 
             if (_isDragging)
             {
                 _selectionEnd = Mouse.current.position.ReadValue();
-                if (_player.SelectedEntities.Count == 0)
-                {
-                    ClearSelectionServerRpc();
-                }
             }
-            else if (!_isClickProcessed)
+            else
             {
                 SelectEntityUnderCursor();
             }
 
             _isDragging = false;
-            _isClickProcessed = true;
 
             if (_selectionBox != null)
             {
@@ -168,10 +161,6 @@ public class PlayerSelection : NetworkBehaviour
             {
                 SelectEntityServerRpc(entity.NetworkObject);
             }
-        }
-        else
-        {
-            ClearSelectionServerRpc();
         }
     }
 
