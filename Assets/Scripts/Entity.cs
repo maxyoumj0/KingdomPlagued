@@ -10,6 +10,7 @@ public class Entity : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    public NetworkVariable<ulong> SelectedByClientID;
     private GameObject _selectionMarker;
 
     private void Awake()
@@ -31,15 +32,15 @@ public class Entity : NetworkBehaviour
     private void OnSelectionChanged(bool oldValue, bool newValue)
     {
         if (_selectionMarker != null)
-        {
+        { 
             _selectionMarker.SetActive(newValue);
         }
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void SetSelectedServerRpc(bool selected)
+    public void SetSelectedServerRpc(bool selected, ServerRpcParams serverRpcParams = default)
     {
-        // Only the server updates the NetworkVariable
+        SelectedByClientID.Value = serverRpcParams.Receive.SenderClientId;
         IsSelected.Value = selected;
     }
 }
