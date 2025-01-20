@@ -3,13 +3,13 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using static UnityEngine.EventSystems.EventTrigger;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class PlayerSelection : NetworkBehaviour
 {
-    // List of selected entities
-    public NetworkList<NetworkObjectReference> SelectedEntities = new NetworkList<NetworkObjectReference>();
-
+    private Player _player;
     private Camera _playerCamera;
     private InputAction _leftClickAction;
 
@@ -22,6 +22,7 @@ public class PlayerSelection : NetworkBehaviour
     private void Start()
     {
         _leftClickAction = InputSystem.actions.FindAction("LeftClick");
+        _player = GetComponent<Player>();
         if (IsOwner)
         {
             _playerCamera = GetComponentInChildren<Camera>();
@@ -31,7 +32,8 @@ public class PlayerSelection : NetworkBehaviour
                 Debug.LogError("Player camera is missing!");
             }
 
-            _selectionBox = GetComponentInChildren<Canvas>().GetComponent<RectTransform>();
+            // Image's RectTransform
+            _selectionBox = GetComponentInChildren<Canvas>().GetComponentInChildren<Image>().GetComponent<RectTransform>();
             if (_selectionBox != null)
             {
                 _selectionBox.gameObject.SetActive(false);
@@ -105,13 +107,9 @@ public class PlayerSelection : NetworkBehaviour
 
         Vector2 size = new Vector2(Mathf.Abs(boxEnd.x - boxStart.x), Mathf.Abs(boxEnd.y - boxStart.y));
         Vector2 center = (boxStart + boxEnd) / 2;
-        Vector2 anchoredPos;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(_selectionBox, center, _playerCamera, out anchoredPos);
-        //Debug.Log($"BoxStart: {boxStart}, BoxEnd: {boxEnd}, Size: {size}, Center: {center}");
-        Debug.Log($"_selectionBox.position before: {_selectionBox.position}");
-        _selectionBox.anchoredPosition = anchoredPos;
+
+        _selectionBox.position = center;
         _selectionBox.sizeDelta = size;
-        Debug.Log($"_selectionBox.position after: {_selectionBox.position}");
     }
 
     private void PerformSelectionBox()
@@ -130,6 +128,7 @@ public class PlayerSelection : NetworkBehaviour
 
             if (selectionRect.Contains(screenPosition))
             {
+                Debug.Log("HIT");
                 entities.Add(entity);
                 SelectEntityServerRpc(entity.NetworkObject);
             }
@@ -143,39 +142,43 @@ public class PlayerSelection : NetworkBehaviour
 
     private void SelectEntityUnderCursor()
     {
-        Ray ray = _playerCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = _playerCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
             var entity = hit.collider.GetComponent<Entity>();
             if (entity != null)
             {
+                Debug.Log("SelectEntityUnderCursor HIT");
                 SelectEntityServerRpc(entity.NetworkObject);
             }
         }
+        else
+        {
+            ClearSelectionServerRpc();
+        }
     }
 
-    [ServerRpc(RequireOwnership = true)]
+    [ServerRpc(RequireOwnership = false)]
     private void SelectEntityServerRpc(NetworkObjectReference entityReference)
     {
-        if (!SelectedEntities.Contains(entityReference))
+        if (entityReference.TryGet(out NetworkObject entityObject))
         {
-            SelectedEntities.Add(entityReference);
-            if (entityReference.TryGet(out NetworkObject entityObject))
+            var entity = entityObject.GetComponent<Entity>();
+            if (entity != null)
             {
-                var entity = entityObject.GetComponent<Entity>();
-                if (entity != null)
-                {
-                    entity.SetSelectedServerRpc(true);
-                }
+                // Update the selection in the Player class
+                _player.AddToSelection(entityReference);
+
+                // Set the entity's selection state
+                entity.SetSelectedServerRpc(true);
             }
         }
     }
 
-    [ServerRpc(RequireOwnership = true)]
+    [ServerRpc(RequireOwnership = false)]
     private void ClearSelectionServerRpc()
     {
-        // Clear all selected entities
-        foreach (var entityReference in SelectedEntities)
+        foreach (var entityReference in _player.SelectedEntities)
         {
             if (entityReference.TryGet(out NetworkObject entityObject))
             {
@@ -186,6 +189,6 @@ public class PlayerSelection : NetworkBehaviour
                 }
             }
         }
-        SelectedEntities.Clear();
+        _player.ClearSelection();
     }
 }

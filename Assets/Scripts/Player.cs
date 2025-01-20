@@ -4,8 +4,8 @@ using Unity.Netcode;
 public class Player : NetworkBehaviour
 {
     public NetworkVariable<Vector3> CursorLocation;
-    public NetworkVariable<Color> PlayerColor;
-    public NetworkVariable<int> PlayerID;
+    public NetworkVariable<Color> PlayerColor { get; set; } = new NetworkVariable<Color>(Color.blue);
+    public NetworkList<NetworkObjectReference> SelectedEntities = new();
 
     public GameObject PlayerCamera;
 
@@ -17,7 +17,6 @@ public class Player : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-
         if (IsOwner)
         {
             // Enable the player's camera if this is the local player
@@ -33,6 +32,36 @@ public class Player : NetworkBehaviour
     private void Update()
     {
         
+    }
+
+    public void AddToSelection(NetworkObjectReference entity)
+    {
+        if (!SelectedEntities.Contains(entity))
+        {
+            SelectedEntities.Add(entity);
+        }
+    }
+
+    public void RemoveFromSelection(NetworkObjectReference entity)
+    {
+        if (SelectedEntities.Contains(entity))
+        {
+            SelectedEntities.Remove(entity);
+        }
+    }
+
+    [ClientRpc]
+    public void RemoveFromSelectionClientRpc(NetworkObjectReference entity)
+    {
+        if (SelectedEntities.Contains(entity))
+        {
+            SelectedEntities.Remove(entity);
+        }
+    }
+
+    public void ClearSelection()
+    {
+        SelectedEntities.Clear();
     }
 
     [ServerRpc]
