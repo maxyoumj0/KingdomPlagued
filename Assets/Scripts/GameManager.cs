@@ -1,82 +1,103 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class GameManager : NetworkBehaviour
 {
-    private NetworkManager m_NetworkManager;
+    public NetworkObject playerPrefab;
+    public Tuple<Vector3, Quaternion> spawnPoint;
 
-    //private Dictionary<ulong, Player> _players = new();
-
-    void Awake()
+    private static GameManager _instance;
+    private Dictionary<ulong, NetworkObject> _players = new();
+    
+    private void Awake()
     {
-        m_NetworkManager = GetComponent<NetworkManager>();
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        // Creating testing spawnPoint automate populating `spawnPoints` later
+        spawnPoint = new(
+            new Vector3(0, 10, -20),
+            Quaternion.identity
+        );
     }
 
     public override void OnNetworkSpawn()
     {
         if (IsServer)
         {
-            //NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
     }
 
-    //void OnGUI()
-    //{
-    //    GUILayout.BeginArea(new Rect(10, 10, 300, 300));
-    //    if (!m_NetworkManager.IsClient && !m_NetworkManager.IsServer)
-    //    {
-    //        StartButtons();
-    //    }
-    //    else
-    //    {
-    //        StatusLabels();
-    //    }
-
-    //    GUILayout.EndArea();
-    //}
-
-    void StartButtons()
+    public void StartHost()
     {
-        if (GUILayout.Button("Host")) m_NetworkManager.StartHost();
-        if (GUILayout.Button("Client")) m_NetworkManager.StartClient();
-        if (GUILayout.Button("Server")) m_NetworkManager.StartServer();
+        StartCoroutine(StartHostWithSceneLoad());
     }
 
-    void StatusLabels()
+    public void StartClient(string ipAddress)
     {
-        var mode = m_NetworkManager.IsHost ?
-            "Host" : m_NetworkManager.IsServer ? "Server" : "Client";
-
-        GUILayout.Label("Transport: " +
-            m_NetworkManager.NetworkConfig.NetworkTransport.GetType().Name);
-        GUILayout.Label("Mode: " + mode);
+        var transport = NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+        transport.SetConnectionData(ipAddress, 7777);
+        NetworkManager.Singleton.StartClient();
     }
 
-    //public void RegisterPlayer(ulong clientId, Player player)
-    //{
-    //    if (!_players.ContainsKey(clientId))
-    //    {
-    //        _players.Add(clientId, player);
-    //    }
-    //}
+    private IEnumerator StartHostWithSceneLoad()
+    {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex + 1);
 
-    //public void UnregisterPlayer(ulong clientId)
-    //{
-    //    if (_players.ContainsKey(clientId))
-    //    {
-    //        _players.Remove(clientId);
-    //    }
-    //}
+        // Wait until the scene has fully loaded
+        while (!asyncLoad.isDone)
+        {
+            yield return null;
+        }
 
-    //public Player GetPlayer(ulong clientId)
-    //{
-    //    return _players.TryGetValue(clientId, out var player) ? player : null;
-    //}
+        NetworkManager.Singleton.StartHost();
+    }
 
-    //private void OnClientDisconnected(ulong clientId)
-    //{
-    //    UnregisterPlayer(clientId);
-    //}
+    private void OnClientConnected(ulong clientId)
+    {
+        if (IsServer)
+        {
+            SpawnPlayer(clientId);
+        }
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        if (IsServer)
+        {
+            _players.Remove(clientId);
+        }
+    }
+    private void SpawnPlayer(ulong clientId)
+    {
+        if (!IsServer) return;
+
+        if (_players.ContainsKey(clientId)) return;
+
+        NetworkObject playerInstance = Instantiate(playerPrefab, spawnPoint.Item1, spawnPoint.Item2);
+        NetworkObject networkObject = playerInstance.GetComponent<NetworkObject>();
+
+        if (networkObject != null)
+        {
+            networkObject.SpawnAsPlayerObject(clientId, true);
+            _players[clientId] = playerInstance;
+        }
+        else
+        {
+            Debug.LogError("Player prefab does not have a NetworkObject component.");
+        }
+    }
 }
