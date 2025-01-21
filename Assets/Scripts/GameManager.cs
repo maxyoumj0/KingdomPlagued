@@ -1,37 +1,74 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class GameManager : NetworkBehaviour
 {
-    public GameObject playerPrefab;
-    public List<Vector3> spawnPoints;
+    public NetworkObject playerPrefab;
+    public Tuple<Vector3, Quaternion> spawnPoint;
 
-    private Dictionary<ulong, GameObject> spawnedPlayers = new Dictionary<ulong, GameObject>();
-
-    private void Start()
+    private static GameManager _instance;
+    private Dictionary<ulong, NetworkObject> _players = new();
+    
+    private void Awake()
     {
-        // Hook into connection approval
-        if (NetworkManager.Singleton.IsServer)
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        // Creating testing spawnPoint automate populating `spawnPoints` later
+        spawnPoint = new(
+            new Vector3(0, 10, -20),
+            Quaternion.identity
+        );
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (IsServer)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
     }
 
-    private void OnDestroy()
+    public void StartHost()
     {
-        if (NetworkManager.Singleton.IsServer)
+        StartCoroutine(StartHostWithSceneLoad());
+    }
+
+    public void StartClient(string ipAddress)
+    {
+        var transport = NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+        transport.SetConnectionData(ipAddress, 7777);
+        NetworkManager.Singleton.StartClient();
+    }
+
+    private IEnumerator StartHostWithSceneLoad()
+    {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex + 1);
+
+        // Wait until the scene has fully loaded
+        while (!asyncLoad.isDone)
         {
-            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
-            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+            yield return null;
         }
+
+        NetworkManager.Singleton.StartHost();
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        if (NetworkManager.Singleton.IsServer)
+        if (IsServer)
         {
             SpawnPlayer(clientId);
         }
@@ -39,57 +76,28 @@ public class GameManager : NetworkBehaviour
 
     private void OnClientDisconnected(ulong clientId)
     {
-        if (NetworkManager.Singleton.IsServer)
+        if (IsServer)
         {
-            DespawnPlayer(clientId);
+            _players.Remove(clientId);
         }
     }
-
     private void SpawnPlayer(ulong clientId)
     {
-        if (!NetworkManager.Singleton.IsServer) return;
+        if (!IsServer) return;
 
-        // Check if this client already has a spawned player.
-        if (spawnedPlayers.ContainsKey(clientId)) return;
+        if (_players.ContainsKey(clientId)) return;
 
-        // Determine the spawn point for the new player.
-        Vector3 spawnPoint = GetSpawnPoint(clientId);
-
-        // Instantiate the player prefab and spawn it as the player's object.
-        GameObject playerInstance = Instantiate(playerPrefab, spawnPoint, Quaternion.identity);
+        NetworkObject playerInstance = Instantiate(playerPrefab, spawnPoint.Item1, spawnPoint.Item2);
         NetworkObject networkObject = playerInstance.GetComponent<NetworkObject>();
 
         if (networkObject != null)
         {
-            networkObject.SpawnAsPlayerObject(clientId, true); // Spawn and assign ownership to the client.
-            spawnedPlayers[clientId] = playerInstance; // Track the spawned player.
+            networkObject.SpawnAsPlayerObject(clientId, true);
+            _players[clientId] = playerInstance;
         }
         else
         {
             Debug.LogError("Player prefab does not have a NetworkObject component.");
         }
-    }
-
-    private void DespawnPlayer(ulong clientId)
-    {
-        if (!NetworkManager.Singleton.IsServer) return;
-
-        if (spawnedPlayers.TryGetValue(clientId, out GameObject player))
-        {
-            NetworkObject networkObject = player.GetComponent<NetworkObject>();
-            if (networkObject != null)
-            {
-                networkObject.Despawn(); // Despawn the network object.
-            }
-
-            Destroy(player); // Destroy the GameObject locally.
-            spawnedPlayers.Remove(clientId); // Remove it from the tracking dictionary.
-        }
-    }
-
-    private Vector3 GetSpawnPoint(ulong clientId)
-    {
-        // Simple round-robin logic for spawn points.
-        return spawnPoints[((int)clientId % spawnPoints.Count)];
     }
 }
