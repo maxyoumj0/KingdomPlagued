@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
@@ -5,10 +6,10 @@ using System.Collections.Generic;
 public class MapManager : NetworkBehaviour
 {
     [Header("Map Settings")]
-    public Vector2Int SpawnPoint = new Vector2Int(10, 10);
     public int MapWidth = 200;
     public int MapHeight = 100;
     public float TileRadius = 0.5f;
+    public float Seed = 10001f;
 
     [Header("Tile Prefabs")]
     public GameObject P_DirtTile;
@@ -54,11 +55,14 @@ public class MapManager : NetworkBehaviour
 
         if (IsServer)
         {
+            if (Seed > 10000f || Seed < -10000f)
+            {
+                Seed = UnityEngine.Random.Range(-10000f, 10000f);
+            }
             GenerateMap();
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         
@@ -72,7 +76,7 @@ public class MapManager : NetworkBehaviour
         {
             for (int y = 0; y < MapHeight; y++)
             { 
-                float noiseValue = Mathf.PerlinNoise(x * 0.1f, y * 0.1f);
+                float noiseValue = Mathf.PerlinNoise((x + Seed) * 0.1f, (y + Seed) * 0.1f);
                 TileType tileType = DetermineTileType(noiseValue);
                 BiomeType biomeType = DetermineBiome(noiseValue);
 
@@ -91,9 +95,6 @@ public class MapManager : NetworkBehaviour
                     TileType = tileType,
                     Biome = biomeType
                 };
-
-                // testing remove later when chunk loading is implemented
-                Instantiate(_tileTypeToPrefab[tileType], worldPosition, Quaternion.Euler(new Vector3(90, 0, 0)));
             }
         }
 
@@ -135,5 +136,17 @@ public class MapManager : NetworkBehaviour
         Debug.Log($"Chunk data sent to client {clientId} for chunk at {chunkData}");
 
         // Use chunk data to initiate tiles and objects
+    }
+
+    // Return Hex coord based on the world position
+    public static Tuple<int, int> WorldCoordToHexCoord(Vector3 worldCoord)
+    {
+        // maybe this function shouldn't be static? Mind the hard coded `TileRadius`
+        float TileRadius = 0.5f;
+        float a = Mathf.Sqrt(3f) * TileRadius / 2;
+
+        int hexX = ;
+
+        return new Tuple<int, int>(hexX, hexY);
     }
 }

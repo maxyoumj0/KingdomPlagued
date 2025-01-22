@@ -93,6 +93,7 @@ public class GameManager : NetworkBehaviour
         if (networkObject != null)
         {
             networkObject.SpawnAsPlayerObject(clientId, true);
+            playerInstance.GetComponent<Player>().SetPlayerHexTileCoord();
             _players[clientId] = playerInstance;
         }
         else

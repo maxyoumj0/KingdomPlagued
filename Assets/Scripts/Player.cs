@@ -1,13 +1,13 @@
+using System;
 using UnityEngine;
 using Unity.Netcode;
 
 public class Player : NetworkBehaviour
 {
-    public NetworkVariable<Vector3> CursorLocation;
     public NetworkVariable<Color> PlayerColor { get; set; } = new NetworkVariable<Color>(Color.blue);
     public NetworkList<NetworkObjectReference> SelectedEntities = new();
-
     public GameObject PlayerCamera;
+    private Tuple<int, int> _playerHexTileCoord = new(0, 0);
 
     private void Awake()
     {
@@ -31,7 +31,10 @@ public class Player : NetworkBehaviour
 
     private void Update()
     {
-        
+        if (transform.hasChanged && CheckPlayerMovedHex())
+        {
+            
+        }
     }
 
     public void AddToSelection(NetworkObjectReference entity)
@@ -62,6 +65,17 @@ public class Player : NetworkBehaviour
     public void ClearSelection()
     {
         SelectedEntities.Clear();
+    }
+
+    [ClientRpc]
+    public void SetPlayerHexTileCoord(int x, int y)
+    {
+        _playerHexTileCoord = new(x, y);
+    }
+
+    private bool CheckPlayerMovedHex()
+    {
+
     }
 
     [ServerRpc]
