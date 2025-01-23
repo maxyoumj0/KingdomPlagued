@@ -32,7 +32,7 @@ public class MapManager : NetworkBehaviour
         else
         {
             // Client requests their initial chunk from the server.
-            RequestInitialChunksServerRpc();
+            //RequestChunkServerRpc();
         }
     }
 
@@ -119,14 +119,17 @@ public class MapManager : NetworkBehaviour
 
     private void GenerateFoliage() {}
 
+    // FIX THIS
     [ServerRpc(RequireOwnership = false)]
-    public void RequestChunkServerRpc(Tuple<int, int> playerHexCoord, ServerRpcParams rpcParams = default)
+    public void RequestChunkServerRpc(Vector2 playerHexCoord, ServerRpcParams rpcParams = default)
     {
 
         // Send the relevant chunk data back to the client.
-        SendChunkToClientRpc(chunkData, rpcParams.Receive.SenderClientId);
+        //SendChunkToClientRpc(chunkData, rpcParams.Receive.SenderClientId);
+        return;
     }
 
+    // FIX THIS
     [ClientRpc]
     public void SendChunkToClientRpc(Vector2Int chunkData, ulong clientId)
     {

@@ -37,7 +37,12 @@ public class Player : NetworkBehaviour
     {
         if (transform.hasChanged && PlayerMovedHex())
         {
-            _mapManager.RequestChunkServerRpc(_playerHexTileCoord);
+            _mapManager.RequestChunkServerRpc(
+                new Vector2(
+                    _playerHexTileCoord.Item1,
+                    _playerHexTileCoord.Item2
+                )
+            );
         }
     }
 
@@ -72,7 +77,7 @@ public class Player : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void SetPlayerHexTileCoord(int x, int y)
+    public void SetPlayerHexTileCoordClientRpc(int x, int y)
     {
         _playerHexTileCoord = new(x, y);
     }
@@ -86,11 +91,5 @@ public class Player : NetworkBehaviour
             return true;
         }
         return false;
-    }
-
-    [ServerRpc]
-    public void UpdatePlayerColorServerRpc(Color newColor)
-    {
-        PlayerColor.Value = newColor; // Update the player color on the server
     }
 }
