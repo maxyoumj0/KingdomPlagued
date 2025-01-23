@@ -2,13 +2,15 @@ using System;
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
+using UnityEngine.Tilemaps;
 
 public class MapManager : NetworkBehaviour
 {
     [Header("Map Settings")]
     public int MapWidth = 200;
     public int MapHeight = 100;
-    public float TileRadius = 0.5f;
+
+    public float TileRadius { get; set; } = 0.5f;
     public float Seed = 10001f;
 
     [Header("Tile Prefabs")]
@@ -118,19 +120,15 @@ public class MapManager : NetworkBehaviour
     private void GenerateFoliage() {}
 
     [ServerRpc(RequireOwnership = false)]
-    private void RequestInitialChunksServerRpc(ServerRpcParams rpcParams = default)
+    public void RequestChunkServerRpc(Tuple<int, int> playerHexCoord, ServerRpcParams rpcParams = default)
     {
-        // Determine the chunk based on `SpawnPoint`
-        Vector2Int chunkData = SpawnPoint;
-
-        // Calculate the initial chunk to be loaded
 
         // Send the relevant chunk data back to the client.
         SendChunkToClientRpc(chunkData, rpcParams.Receive.SenderClientId);
     }
 
     [ClientRpc]
-    private void SendChunkToClientRpc(Vector2Int chunkData, ulong clientId)
+    public void SendChunkToClientRpc(Vector2Int chunkData, ulong clientId)
     {
         // The server sends chunk data to the client.
         Debug.Log($"Chunk data sent to client {clientId} for chunk at {chunkData}");
@@ -139,13 +137,21 @@ public class MapManager : NetworkBehaviour
     }
 
     // Return Hex coord based on the world position
-    public static Tuple<int, int> WorldCoordToHexCoord(Vector3 worldCoord)
+    public static Tuple<int, int> WorldCoordToHexCoord(Vector3 worldCoord, float TileRadius, int MapWidth, int MapHeight)
     {
-        // maybe this function shouldn't be static? Mind the hard coded `TileRadius`
-        float TileRadius = 0.5f;
         float a = Mathf.Sqrt(3f) * TileRadius / 2;
 
-        int hexX = ;
+        // check out of bounds
+        if (worldCoord.x < (-1 * a) || worldCoord.x > ((MapWidth - 1) * a + a) || worldCoord.z < (-1 * a) || worldCoord.z > (MapHeight - 1) * a + a)
+        {
+            Debug.Log($"WorldCoordToHexCoord error: worldCoord out of bounds");
+            return null;
+        }
+
+        // Edge case to account for: worldCoord.z or x are negative
+        int hexY = Mathf.FloorToInt(worldCoord.z / (1.5f * TileRadius));
+        float xOffset = (hexY % 2 != 0) ? a : 0;
+        int hexX = Mathf.FloorToInt((worldCoord.x - xOffset) / (2f * a));
 
         return new Tuple<int, int>(hexX, hexY);
     }

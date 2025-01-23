@@ -9,6 +9,8 @@ public class Player : NetworkBehaviour
     public GameObject PlayerCamera;
     private Tuple<int, int> _playerHexTileCoord = new(0, 0);
 
+    private MapManager _mapManager;
+
     private void Awake()
     {
         PlayerCamera = transform.Find("P_PlayerCamera")?.gameObject;
@@ -27,13 +29,15 @@ public class Player : NetworkBehaviour
             // Disable the camera for non-local players
             PlayerCamera.SetActive(false);
         }
+
+        _mapManager = GameObject.Find("P_MapManger").GetComponent<MapManager>();
     }
 
     private void Update()
     {
-        if (transform.hasChanged && CheckPlayerMovedHex())
+        if (transform.hasChanged && PlayerMovedHex())
         {
-            
+            _mapManager.RequestChunkServerRpc(_playerHexTileCoord);
         }
     }
 
@@ -73,9 +77,15 @@ public class Player : NetworkBehaviour
         _playerHexTileCoord = new(x, y);
     }
 
-    private bool CheckPlayerMovedHex()
+    private bool PlayerMovedHex()
     {
-
+        Tuple<int, int> convertedHexCoord = MapManager.WorldCoordToHexCoord(transform.position, _mapManager.TileRadius, _mapManager.MapWidth, _mapManager.MapHeight);
+        if (!_playerHexTileCoord.Equals(convertedHexCoord))
+        {
+            _playerHexTileCoord = convertedHexCoord;
+            return true;
+        }
+        return false;
     }
 
     [ServerRpc]
