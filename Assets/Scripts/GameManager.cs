@@ -93,6 +93,8 @@ public class GameManager : NetworkBehaviour
         if (networkObject != null)
         {
             networkObject.SpawnAsPlayerObject(clientId, true);
+            // change later to a real coord
+            playerInstance.GetComponent<Player>().SetPlayerHexTileCoordClientRpc(0, 0);
             _players[clientId] = playerInstance;
         }
         else

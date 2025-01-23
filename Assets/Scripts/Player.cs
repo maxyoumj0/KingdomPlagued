@@ -1,13 +1,15 @@
+using System;
 using UnityEngine;
 using Unity.Netcode;
 
 public class Player : NetworkBehaviour
 {
-    public NetworkVariable<Vector3> CursorLocation;
     public NetworkVariable<Color> PlayerColor { get; set; } = new NetworkVariable<Color>(Color.blue);
     public NetworkList<NetworkObjectReference> SelectedEntities = new();
-
     public GameObject PlayerCamera;
+    private Tuple<int, int> _playerHexTileCoord = new(0, 0);
+
+    private MapManager _mapManager;
 
     private void Awake()
     {
@@ -27,11 +29,21 @@ public class Player : NetworkBehaviour
             // Disable the camera for non-local players
             PlayerCamera.SetActive(false);
         }
+
+        _mapManager = GameObject.Find("P_MapManger").GetComponent<MapManager>();
     }
 
     private void Update()
     {
-        
+        if (transform.hasChanged && PlayerMovedHex())
+        {
+            _mapManager.RequestChunkServerRpc(
+                new Vector2(
+                    _playerHexTileCoord.Item1,
+                    _playerHexTileCoord.Item2
+                )
+            );
+        }
     }
 
     public void AddToSelection(NetworkObjectReference entity)
@@ -64,9 +76,20 @@ public class Player : NetworkBehaviour
         SelectedEntities.Clear();
     }
 
-    [ServerRpc]
-    public void UpdatePlayerColorServerRpc(Color newColor)
+    [ClientRpc]
+    public void SetPlayerHexTileCoordClientRpc(int x, int y)
     {
-        PlayerColor.Value = newColor; // Update the player color on the server
+        _playerHexTileCoord = new(x, y);
+    }
+
+    private bool PlayerMovedHex()
+    {
+        Tuple<int, int> convertedHexCoord = MapManager.WorldCoordToHexCoord(transform.position, _mapManager.TileRadius, _mapManager.MapWidth, _mapManager.MapHeight);
+        if (!_playerHexTileCoord.Equals(convertedHexCoord))
+        {
+            _playerHexTileCoord = convertedHexCoord;
+            return true;
+        }
+        return false;
     }
 }
