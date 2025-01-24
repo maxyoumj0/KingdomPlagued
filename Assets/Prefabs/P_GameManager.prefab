@@ -71,5 +71,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  playerPrefab: {fileID: 7008846352415190796, guid: 5366e1cb8187f9844adc814db0664de2, type: 3}
-  spawnPoints: []
+  PlayerPrefab: {fileID: 199089837140608052, guid: 5366e1cb8187f9844adc814db0664de2, type: 3}
+  MapManagerPrefab: {fileID: 2717871876795662427, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
+  MapWidth: 200
+  MapHeight: 100

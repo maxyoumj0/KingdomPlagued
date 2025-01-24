@@ -4,14 +4,23 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Tilemaps;
 using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class GameManager : NetworkBehaviour
 {
-    public NetworkObject playerPrefab;
-    public Tuple<Vector3, Quaternion> spawnPoint;
+    public NetworkObject PlayerPrefab;
+    public NetworkObject MapManagerPrefab;
+    // Implement function for setting `SpawnPoint`
+    public Tuple<Vector3, Quaternion> SpawnPoint;
+
+    [Header("Map Settings")]
+    public int MapWidth = 200;
+    public int MapHeight = 100;
+    public float TileRadius = 0.5f;
 
     private static GameManager _instance;
+    private NetworkObject _mapManager;
     private Dictionary<ulong, NetworkObject> _players = new();
     
     private void Awake()
@@ -26,7 +35,7 @@ public class GameManager : NetworkBehaviour
         DontDestroyOnLoad(gameObject);
 
         // Creating testing spawnPoint automate populating `spawnPoints` later
-        spawnPoint = new(
+        SpawnPoint = new(
             new Vector3(0, 10, -20),
             Quaternion.identity
         );
@@ -43,6 +52,7 @@ public class GameManager : NetworkBehaviour
 
     public void StartHost()
     {
+
         StartCoroutine(StartHostWithSceneLoad());
     }
 
@@ -62,6 +72,13 @@ public class GameManager : NetworkBehaviour
         {
             yield return null;
         }
+
+        // Instantiate MapManager NetworkObject and generate the map
+        _mapManager = Instantiate(MapManagerPrefab, Vector3.zero, Quaternion.identity);
+        MapManager mapManagerComponent = _mapManager.GetComponent<MapManager>();
+        mapManagerComponent.MapHeight = MapHeight;
+        mapManagerComponent.MapWidth = MapWidth;
+        mapManagerComponent.GenerateMap();
 
         NetworkManager.Singleton.StartHost();
     }
@@ -87,14 +104,14 @@ public class GameManager : NetworkBehaviour
 
         if (_players.ContainsKey(clientId)) return;
 
-        NetworkObject playerInstance = Instantiate(playerPrefab, spawnPoint.Item1, spawnPoint.Item2);
+        NetworkObject playerInstance = Instantiate(PlayerPrefab, SpawnPoint.Item1, SpawnPoint.Item2);
         NetworkObject networkObject = playerInstance.GetComponent<NetworkObject>();
 
         if (networkObject != null)
         {
             networkObject.SpawnAsPlayerObject(clientId, true);
             // change later to a real coord
-            playerInstance.GetComponent<Player>().SetPlayerHexTileCoordClientRpc(0, 0);
+            playerInstance.GetComponent<Player>().InitializePlayerClientRpc(MapHeight, MapWidth, TileRadius, Vector2Int.zero);
             _players[clientId] = playerInstance;
         }
         else

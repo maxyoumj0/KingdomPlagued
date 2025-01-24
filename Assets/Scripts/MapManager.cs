@@ -6,10 +6,8 @@ using UnityEngine.Tilemaps;
 
 public class MapManager : NetworkBehaviour
 {
-    [Header("Map Settings")]
-    public int MapWidth = 200;
-    public int MapHeight = 100;
-
+    public int MapWidth { get; set; } = 200;
+    public int MapHeight { get; set; } = 100;
     public float TileRadius { get; set; } = 0.5f;
     public float Seed = 10001f;
 
@@ -70,7 +68,7 @@ public class MapManager : NetworkBehaviour
         
     }
 
-    private void GenerateMap()
+    public void GenerateMap()
     {
         _mapData = new TileData[MapWidth, MapHeight];
         float a = Mathf.Sqrt(3f) * TileRadius / 2;
@@ -140,22 +138,42 @@ public class MapManager : NetworkBehaviour
     }
 
     // Return Hex coord based on the world position
-    public static Tuple<int, int> WorldCoordToHexCoord(Vector3 worldCoord, float TileRadius, int MapWidth, int MapHeight)
+    public static Vector2Int WorldCoordToHexCoord(Vector3 worldCoord, float TileRadius, int MapWidth, int MapHeight)
     {
         float a = Mathf.Sqrt(3f) * TileRadius / 2;
-
-        // check out of bounds
-        if (worldCoord.x < (-1 * a) || worldCoord.x > ((MapWidth - 1) * a + a) || worldCoord.z < (-1 * a) || worldCoord.z > (MapHeight - 1) * a + a)
-        {
-            Debug.Log($"WorldCoordToHexCoord error: worldCoord out of bounds");
-            return null;
-        }
 
         // Edge case to account for: worldCoord.z or x are negative
         int hexY = Mathf.FloorToInt(worldCoord.z / (1.5f * TileRadius));
         float xOffset = (hexY % 2 != 0) ? a : 0;
         int hexX = Mathf.FloorToInt((worldCoord.x - xOffset) / (2f * a));
 
-        return new Tuple<int, int>(hexX, hexY);
+        // check out of bounds
+        bool outOfBounds = false;
+        if (worldCoord.x < (-1 * a))
+        {
+            outOfBounds = true;
+            hexX = 0;
+        }
+        else if (worldCoord.x > ((MapWidth - 1) * a + a))
+        {
+            outOfBounds = true;
+            hexX = MapWidth;
+        }
+        else if (worldCoord.z < (-1 * a))
+        {
+            outOfBounds = true;
+            hexY = 0;
+        }
+        else if (worldCoord.z > (MapHeight - 1) * a + a)
+        {
+            outOfBounds = true;
+            hexY = MapHeight;
+        }
+        if (outOfBounds)
+        {
+            Debug.Log($"WorldCoordToHexCoord error: worldCoord out of bounds. Returning closest HexTile");
+        }
+
+        return new(hexX, hexY);
     }
 }

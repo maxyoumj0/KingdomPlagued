@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2194650908
+  GlobalObjectIdHash: 2392429137
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -71,6 +71,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  SpawnPoint: {x: 10, y: 10}
   MapWidth: 50
   MapHeight: 50
+  Seed: 10001
+  P_DirtTile: {fileID: 5829371857005850577, guid: 169668b427ac12649ae608bd7aa51f21, type: 3}
+  P_GrassTile: {fileID: 5829371857005850577, guid: 5e38abf6d7347ac479439f56ab90b1d3, type: 3}
+  P_WaterTile: {fileID: 5829371857005850577, guid: ac512acc3649386499f25e86d78a98e7, type: 3}
+  P_SandTile: {fileID: 5829371857005850577, guid: 114cf35b16f51ac4280506aa554e4b17, type: 3}
+  P_StoneTile: {fileID: 5829371857005850577, guid: 4b182642fed1aca46a62f3aab56a1ce0, type: 3}
