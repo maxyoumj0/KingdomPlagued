@@ -59,7 +59,6 @@ public class MapManager : NetworkBehaviour
             {
                 Seed = UnityEngine.Random.Range(-10000f, 10000f);
             }
-            GenerateMap();
         }
     }
 
