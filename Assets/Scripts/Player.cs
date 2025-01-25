@@ -1,6 +1,9 @@
 using System;
+using System.Numerics;
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.InputSystem;
+using Vector2 = UnityEngine.Vector2;
 
 public class Player : NetworkBehaviour
 {
@@ -99,5 +102,18 @@ public class Player : NetworkBehaviour
             }
         }
         return false;
+    }
+
+    [ClientRpc]
+    public void GetPlayerMousePosClientRpc(ulong networkObjectID)
+    {
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectID, out NetworkObject entityNetworkObject))
+        {
+            Building target = entityNetworkObject.GetComponent<Building>();
+            if (target != null)
+            {
+                target.SetBlueprinterMousePosServerRpc(Mouse.current.position.ReadValue());
+            }
+        } 
     }
 }

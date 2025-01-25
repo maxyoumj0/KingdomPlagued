@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 7008846352415190796}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.1936647, y: 11.847637, z: -5.356943}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -112,8 +112,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  CursorLocation:
-    m_InternalValue: {x: 0, y: 0, z: 0}
   PlayerCamera: {fileID: 0}
 --- !u!114 &-7528105465600131375
 MonoBehaviour:
@@ -128,8 +126,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  MoveSpeed: 5
-  ZoomLevel: 5
+  _moveSpeed: 5
+  _zoomLevel: 5
+  _edgeSize: 30
 --- !u!114 &4296742760563273645
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -213,7 +212,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9042332911942034303, guid: 48f36f43165ff424c90a8997945de9b2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9042332911942034303, guid: 48f36f43165ff424c90a8997945de9b2, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 9042332911942034303, guid: 48f36f43165ff424c90a8997945de9b2, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 9042332911942034303, guid: 48f36f43165ff424c90a8997945de9b2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 90
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
