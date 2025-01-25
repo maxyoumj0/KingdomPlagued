@@ -114,6 +114,6 @@ public class Player : NetworkBehaviour
             {
                 target.SetBlueprinterMousePosServerRpc(Mouse.current.position.ReadValue());
             }
-        } 
+        }
     }
 }

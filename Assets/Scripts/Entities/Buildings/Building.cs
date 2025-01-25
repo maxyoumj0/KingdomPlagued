@@ -21,7 +21,7 @@ public class Building : Entity
         }
     }
 
-    private void Update()
+    void Update()
     {
         if (IsBlueprint && IsServer && NetworkManager.Singleton.ConnectedClients.TryGetValue(_blueprintedBy, out var networkClient))
         {

@@ -7,10 +7,4 @@ public class TestBuilding : Building
     {
         
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }
