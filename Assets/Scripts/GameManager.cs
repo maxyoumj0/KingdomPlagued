@@ -39,7 +39,7 @@ public class GameManager : NetworkBehaviour
 
         // Creating testing spawnPoint automate populating `spawnPoints` later
         SpawnPoint = new(
-            new Vector3(0, 10, -20),
+            new Vector3(0, 40, -20),
             Quaternion.identity
         );
     }
@@ -76,14 +76,15 @@ public class GameManager : NetworkBehaviour
             yield return null;
         }
 
+        NetworkManager.Singleton.StartHost();
+
         // Instantiate MapManager NetworkObject and generate the map
         _mapManager = Instantiate(MapManagerPrefab, Vector3.zero, Quaternion.identity);
+        _mapManager.Spawn();
         MapManager mapManagerComponent = _mapManager.GetComponent<MapManager>();
         mapManagerComponent.MapHeight = MapHeight;
         mapManagerComponent.MapWidth = MapWidth;
         mapManagerComponent.GenerateMap();
-
-        NetworkManager.Singleton.StartHost();
     }
 
     private void OnClientConnected(ulong clientId)
