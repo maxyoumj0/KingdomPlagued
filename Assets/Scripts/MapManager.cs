@@ -6,36 +6,25 @@ using UnityEngine.Tilemaps;
 
 public class MapManager : NetworkBehaviour
 {
-    public int MapWidth { get; set; } = 200;
-    public int MapHeight { get; set; } = 100;
-    public float TileRadius { get; set; } = 0.5f;
+    public int MapWidth { get; set; } = 50;
+    public int MapHeight { get; set; } = 50;
+    public float TileSize { get; set; }
     public float Seed = 10001f;
 
     [Header("Tile Prefabs")]
-    public GameObject P_DirtTile;
-    public GameObject P_GrassTile;
-    public GameObject P_WaterTile;
-    public GameObject P_SandTile;
-    public GameObject P_StoneTile;
+    public NetworkObject P_DirtTile;
+    public NetworkObject P_GrassTile;
+    public NetworkObject P_WaterTile;
+    public NetworkObject P_SandTile;
+    public NetworkObject P_StoneTile;
+    public NetworkObject P_DefaultTile;
 
-    private Dictionary<TileType, GameObject> _tileTypeToPrefab;
+    private Dictionary<TileType, NetworkObject> _tileTypeToPrefab;
     private TileData[,] _mapData;
 
     public override void OnNetworkSpawn()
     {
-        if (IsServer)
-        {
-            //GenerateMap(); // Only the server generates the map.
-        }
-        else
-        {
-            // Client requests their initial chunk from the server.
-            //RequestChunkServerRpc();
-        }
-    }
-
-    void Start()
-    {
+        TileSize = P_DefaultTile.GetComponentInChildren<Renderer>().bounds.size.x;
         _tileTypeToPrefab = new()
         {
             { TileType.Dirt, P_DirtTile  },
@@ -70,7 +59,6 @@ public class MapManager : NetworkBehaviour
     public void GenerateMap()
     {
         _mapData = new TileData[MapWidth, MapHeight];
-        float a = Mathf.Sqrt(3f) * TileRadius / 2;
         for (int x = 0; x < MapWidth; x++)
         {
             for (int y = 0; y < MapHeight; y++)
@@ -79,14 +67,14 @@ public class MapManager : NetworkBehaviour
                 TileType tileType = DetermineTileType(noiseValue);
                 BiomeType biomeType = DetermineBiome(noiseValue);
 
-                float CurY = y * 1.5f * TileRadius;
-                float CurX = x * a * 2f;
+                float curY = y * TileSize * 0.5f;
+                float curX = x * TileSize;
                 if (y % 2 != 0)
                 {
-                    CurX += a;
+                    curX += TileSize * 0.5f;
                 }
 
-                Vector3 worldPosition = new Vector3(CurX, 0, CurY);
+                Vector3 worldPosition = new Vector3(curX, 0, curY);
 
                 _mapData[x, y] = new TileData
                 {
@@ -94,6 +82,8 @@ public class MapManager : NetworkBehaviour
                     TileType = tileType,
                     Biome = biomeType
                 };
+                var tile = Instantiate(_tileTypeToPrefab[tileType], worldPosition, _tileTypeToPrefab[tileType].transform.rotation);
+                tile.Spawn();
             }
         }
 

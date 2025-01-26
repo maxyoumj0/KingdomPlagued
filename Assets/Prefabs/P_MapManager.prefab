@@ -71,11 +71,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  MapWidth: 50
-  MapHeight: 50
   Seed: 10001
-  P_DirtTile: {fileID: 5829371857005850577, guid: 169668b427ac12649ae608bd7aa51f21, type: 3}
-  P_GrassTile: {fileID: 5829371857005850577, guid: 5e38abf6d7347ac479439f56ab90b1d3, type: 3}
-  P_WaterTile: {fileID: 5829371857005850577, guid: ac512acc3649386499f25e86d78a98e7, type: 3}
-  P_SandTile: {fileID: 5829371857005850577, guid: 114cf35b16f51ac4280506aa554e4b17, type: 3}
-  P_StoneTile: {fileID: 5829371857005850577, guid: 4b182642fed1aca46a62f3aab56a1ce0, type: 3}
+  P_DirtTile: {fileID: 1195395968198558241, guid: 18d3809e1fa2cff4d87d4adcccf9568c, type: 3}
+  P_GrassTile: {fileID: 1195395968198558241, guid: cfb427c22ba7956458bb1f6d8a3f25f8, type: 3}
+  P_WaterTile: {fileID: 1195395968198558241, guid: 36f2b8596682d3e4bb68a89ee6909836, type: 3}
+  P_SandTile: {fileID: 1195395968198558241, guid: c829bf4ea350e394b8b551516ef10784, type: 3}
+  P_StoneTile: {fileID: 1195395968198558241, guid: 83059123627cb9b42b350373c9c0ca09, type: 3}
+  P_DefaultTile: {fileID: -6189623529203236767, guid: 59e073f74eee84d41adf25993e356822, type: 3}
