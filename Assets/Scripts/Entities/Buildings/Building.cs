@@ -9,7 +9,7 @@ public class Building : Entity
     public Material BlueprintMaterial;
     public Material DefaultMaterial;
     private ulong _blueprintedBy;
-    private Vector2 _blueprinterMousePos;
+    private Vector3 _blueprinterMousePos;
     private MeshRenderer[] _renderers;
 
     public override void OnNetworkSpawn()
@@ -31,7 +31,7 @@ public class Building : Entity
     }
 
     [ServerRpc]
-    public void SetBlueprinterMousePosServerRpc(Vector2 blueprinterMousePos)
+    public void SetBlueprinterMousePosServerRpc(Vector3 blueprinterMousePos)
     {
         _blueprinterMousePos = blueprinterMousePos;
     }
@@ -46,12 +46,8 @@ public class Building : Entity
         // Upgrade logic for building.
     }
 
-    public void Place()
-    {
-        IsBlueprint = false;
-    }
-
-    public void SetBlueprintMode(bool isBlueprint, ulong blueprintedBy)
+    [ServerRpc]
+    public void SetBlueprintModeServerRpc(bool isBlueprint, ulong blueprintedBy)
     {
         IsBlueprint = isBlueprint;
         _blueprintedBy = blueprintedBy;

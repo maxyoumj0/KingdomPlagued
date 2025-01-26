@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
 using Vector2 = UnityEngine.Vector2;
+using static UnityEngine.UIElements.UxmlAttributeDescription;
 
 public class Player : NetworkBehaviour
 {
@@ -16,6 +17,9 @@ public class Player : NetworkBehaviour
     private int _mapWidth;
     private float _tileRadius;
     private MapManager _mapManager;
+    private bool _placingBuilding = false;
+    private Building _buildingBeingPlaced;
+    private InputAction _leftClickAction;
 
     private void Awake()
     {
@@ -35,6 +39,7 @@ public class Player : NetworkBehaviour
             // Disable the camera for non-local players
             PlayerCamera.SetActive(false);
         }
+        _leftClickAction = InputSystem.actions.FindAction("LeftClick");
     }
 
     private void Update()
@@ -48,6 +53,19 @@ public class Player : NetworkBehaviour
                     _playerHexTileCoord.y
                 )
             );
+        }
+
+        if (_placingBuilding)
+        {
+            HandleLeftClickOnBuild();
+        }
+    }
+
+    private void HandleLeftClickOnBuild()
+    {
+        if (_leftClickAction.IsPressed())
+        {
+            _buildingBeingPlaced.SetBlueprintModeServerRpc(false, this.NetworkObjectId);
         }
     }
 
@@ -109,10 +127,13 @@ public class Player : NetworkBehaviour
     {
         if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectID, out NetworkObject entityNetworkObject))
         {
-            Building target = entityNetworkObject.GetComponent<Building>();
-            if (target != null)
+            Ray ray = GetComponentInChildren<Camera>().ScreenPointToRay(Mouse.current.position.ReadValue());
+            Building building = entityNetworkObject.GetComponent<Building>();
+            if (building != null && Physics.Raycast(ray, out RaycastHit hit) && hit.collider.CompareTag("Tile"))
             {
-                target.SetBlueprinterMousePosServerRpc(Mouse.current.position.ReadValue());
+                building.SetBlueprinterMousePosServerRpc(hit.point);
+                _placingBuilding = true;
+                _buildingBeingPlaced = building;
             }
         }
     }

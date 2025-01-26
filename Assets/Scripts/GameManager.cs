@@ -136,7 +136,7 @@ public class GameManager : NetworkBehaviour
         }
         networkObject.Spawn();
         _entities.Add(buildingObject.GetComponent<NetworkObject>().NetworkObjectId, buildingObject);
-        buildingObject.GetComponent<Building>().SetBlueprintMode(true, rpcParams.Receive.SenderClientId);
+        buildingObject.GetComponent<Building>().SetBlueprintModeServerRpc(true, rpcParams.Receive.SenderClientId);
     }
 
     [ServerRpc]

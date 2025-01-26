@@ -54,7 +54,11 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 565adca48441c5c4c924f8488816155b, type: 2}
     - target: {fileID: 919132149155446097, guid: a95d8b426fb4e4f409f8486c2b9f6a61, type: 3}
       propertyPath: m_Name
-      value: P_Water
+      value: P_WaterTile
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: a95d8b426fb4e4f409f8486c2b9f6a61, type: 3}
+      propertyPath: m_TagString
+      value: Tile
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

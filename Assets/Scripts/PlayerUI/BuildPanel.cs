@@ -21,7 +21,6 @@ public class BuildPanel : MonoBehaviour
             if (localPlayerObject != null)
             {
                 _localPlayer = localPlayerObject.gameObject;
-                Debug.Log($"Local player GameObject: {_localPlayer.name}");
             }
             else
             {
@@ -36,7 +35,6 @@ public class BuildPanel : MonoBehaviour
 
     public void TestBuilding()
     {
-        Debug.Log("TestBuilding Clicked");
         GameManager.Instance.SpawnBuildingBlueprintServerRpc(BuildingEnum.TestBuilding, Mouse.current.position.ReadValue(), _defaultBuildingRotation);
     }
 
