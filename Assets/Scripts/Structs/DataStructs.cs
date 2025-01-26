@@ -1,4 +1,4 @@
-using UnityEngine;
+using System.Collections.Generic;using UnityEngine;
 
 [System.Serializable]
 public struct TileData
@@ -27,3 +27,5 @@ public struct PawnData
 
 public enum TileType { Grass, Water, Sand, Dirt, Stone }
 public enum BiomeType { Plains, Desert, Ocean, Forest }
+
+public enum BuildingEnum { TestBuilding }

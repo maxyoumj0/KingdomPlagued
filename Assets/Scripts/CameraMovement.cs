@@ -27,16 +27,16 @@ public class PlayerCamera : NetworkBehaviour
         transform.position += new Vector3(moveValue.x, 0, moveValue.y) * _moveSpeed * Time.deltaTime;
 
         if (Application.isFocused) {
-            if (Input.mousePosition.x > Screen.width - _edgeSize) {
+            if (Mouse.current.position.ReadValue().x > Screen.width - _edgeSize) {
                 transform.position += Vector3.right * _moveSpeed * Time.deltaTime;
             }
-            if (Input.mousePosition.x < _edgeSize) {
+            if (Mouse.current.position.ReadValue().x < _edgeSize) {
                 transform.position -= Vector3.right * _moveSpeed * Time.deltaTime;
             }
-            if (Input.mousePosition.y > Screen.height - _edgeSize) {
+            if (Mouse.current.position.ReadValue().y > Screen.height - _edgeSize) {
                 transform.position += Vector3.forward * _moveSpeed * Time.deltaTime;
             }
-            if (Input.mousePosition.y < _edgeSize) {
+            if (Mouse.current.position.ReadValue().y < _edgeSize) {
                 transform.position -= Vector3.forward * _moveSpeed * Time.deltaTime;
             }
         }

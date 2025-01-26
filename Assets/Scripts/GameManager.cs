@@ -9,8 +9,11 @@ using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class GameManager : NetworkBehaviour
 {
+    public static GameManager Instance { get; private set; }
     public NetworkObject PlayerPrefab;
     public NetworkObject MapManagerPrefab;
+
+    public BuildingRegistry BuildingRegistryObject;
     // Implement function for setting `SpawnPoint`
     public Tuple<Vector3, Quaternion> SpawnPoint;
 
@@ -19,19 +22,19 @@ public class GameManager : NetworkBehaviour
     public int MapHeight = 100;
     public float TileRadius = 0.5f;
 
-    private static GameManager _instance;
     private NetworkObject _mapManager;
     private Dictionary<ulong, NetworkObject> _players = new();
+    private Dictionary<ulong, GameObject> _entities = new();
     
     private void Awake()
     {
-        if (_instance != null && _instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
 
-        _instance = this;
+        Instance = this;
         DontDestroyOnLoad(gameObject);
 
         // Creating testing spawnPoint automate populating `spawnPoints` later
@@ -110,7 +113,7 @@ public class GameManager : NetworkBehaviour
         if (networkObject != null)
         {
             networkObject.SpawnAsPlayerObject(clientId, true);
-            // change later to a real coord
+            // change later to a real spawn point
             playerInstance.GetComponent<Player>().InitializePlayerClientRpc(MapHeight, MapWidth, TileRadius, Vector2Int.zero);
             _players[clientId] = playerInstance;
         }
@@ -118,5 +121,27 @@ public class GameManager : NetworkBehaviour
         {
             Debug.LogError("Player prefab does not have a NetworkObject component.");
         }
+    }
+
+    [ServerRpc]
+    public void SpawnBuildingBlueprintServerRpc(BuildingEnum buildingBlueprint, Vector2 playerMousePos, Quaternion buildingRotation, ServerRpcParams rpcParams = default)
+    {
+        var buildingObject = Instantiate(BuildingRegistryObject.GetPrefab(buildingBlueprint), playerMousePos, buildingRotation);
+        var networkObject = buildingObject.GetComponent<NetworkObject>();
+        if (networkObject == null)
+        {
+            Debug.LogError("The prefab does not have a NetworkObject component!");
+            Destroy(buildingObject);
+            return;
+        }
+        networkObject.Spawn();
+        _entities.Add(buildingObject.GetComponent<NetworkObject>().NetworkObjectId, buildingObject);
+        buildingObject.GetComponent<Building>().SetBlueprintModeServerRpc(true, rpcParams.Receive.SenderClientId);
+    }
+
+    [ServerRpc]
+    public void DespawnBuildingBlueprintServerRpc()
+    {
+        return;
     }
 }
