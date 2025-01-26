@@ -20,7 +20,8 @@ public class GameManager : NetworkBehaviour
     [Header("Map Settings")]
     public int MapWidth = 200;
     public int MapHeight = 100;
-    public float TileRadius = 0.5f;
+
+    private float _tileSize;
 
     private NetworkObject _mapManager;
     private Dictionary<ulong, NetworkObject> _players = new();
@@ -84,6 +85,7 @@ public class GameManager : NetworkBehaviour
         MapManager mapManagerComponent = _mapManager.GetComponent<MapManager>();
         mapManagerComponent.MapHeight = MapHeight;
         mapManagerComponent.MapWidth = MapWidth;
+        _tileSize = mapManagerComponent.TileSize;
         mapManagerComponent.GenerateMap();
     }
 
@@ -115,7 +117,7 @@ public class GameManager : NetworkBehaviour
         {
             networkObject.SpawnAsPlayerObject(clientId, true);
             // change later to a real spawn point
-            playerInstance.GetComponent<Player>().InitializePlayerClientRpc(MapHeight, MapWidth, TileRadius, Vector2Int.zero);
+            playerInstance.GetComponent<Player>().InitializePlayerClientRpc(MapHeight, MapWidth, _tileSize, Vector2Int.zero);
             _players[clientId] = playerInstance;
         }
         else
