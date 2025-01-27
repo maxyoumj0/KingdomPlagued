@@ -12,7 +12,7 @@ public class Player : NetworkBehaviour
     public NetworkList<NetworkObjectReference> SelectedEntities = new();
     public GameObject PlayerCamera;
 
-    private Vector2Int _playerHexTileCoord = new(0, 0);
+    private Vector2Int _playerTileCoord = new(0, 0);
     private int _mapHeight;
     private int _mapWidth;
     private float _tileRadius;
@@ -47,12 +47,7 @@ public class Player : NetworkBehaviour
         // Request for chunks when Player moved to a different hex (Modify this to chunk later)
         if (transform.hasChanged && PlayerMovedHex())
         {
-            _mapManager.RequestChunkServerRpc(
-                new Vector2(
-                    _playerHexTileCoord.x,
-                    _playerHexTileCoord.y
-                )
-            );
+            _mapManager.RequestChunkServerRpc(transform.position);
         }
 
         if (_placingBuilding)
@@ -70,12 +65,12 @@ public class Player : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void InitializePlayerClientRpc(int mapHeight, int mapWidth, float tileRadius, Vector2Int spawnPointHexCoord)
+    public void InitializePlayerClientRpc(int mapHeight, int mapWidth, float tileRadius, Vector2Int spawnPointTileCoord)
     {
         _mapHeight = mapHeight;
         _mapWidth = mapWidth;
         _tileRadius = tileRadius;
-        _playerHexTileCoord = spawnPointHexCoord;
+        _playerTileCoord = spawnPointTileCoord;
     }
 
     public void AddToSelection(NetworkObjectReference entity)
@@ -112,10 +107,10 @@ public class Player : NetworkBehaviour
     {
         if (_mapManager != null)
         {
-            Vector2Int convertedHexCoord = MapManager.WorldCoordToHexCoord(transform.position, _tileRadius, _mapWidth, _mapHeight);
-            if (!_playerHexTileCoord.Equals(convertedHexCoord))
+            Vector2Int convertedHexCoord = MapManager.WorldCoordToTileCoord(transform.position, _tileRadius, _mapWidth, _mapHeight);
+            if (!_playerTileCoord.Equals(convertedHexCoord))
             {
-                _playerHexTileCoord = convertedHexCoord;
+                _playerTileCoord = convertedHexCoord;
                 return true;
             }
         }

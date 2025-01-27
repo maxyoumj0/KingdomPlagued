@@ -9,6 +9,7 @@ public class MapManager : NetworkBehaviour
     public int MapWidth { get; set; } = 50;
     public int MapHeight { get; set; } = 50;
     public float TileSize { get; set; }
+    public int ChunkSize { get; set; } = 32;
     public float Seed = 10001f;
 
     [Header("Tile Prefabs")]
@@ -58,6 +59,8 @@ public class MapManager : NetworkBehaviour
 
     public void GenerateMap()
     {
+        if (!IsServer) return;
+
         _mapData = new TileData[MapWidth, MapHeight];
         for (int x = 0; x < MapWidth; x++)
         {
@@ -82,11 +85,8 @@ public class MapManager : NetworkBehaviour
                     TileType = tileType,
                     Biome = biomeType
                 };
-                var tile = Instantiate(_tileTypeToPrefab[tileType], worldPosition, _tileTypeToPrefab[tileType].transform.rotation);
-                tile.Spawn();
             }
         }
-
         Debug.Log("Map generated on server.");
     }
 
@@ -104,16 +104,18 @@ public class MapManager : NetworkBehaviour
         return BiomeType.Plains;
     }
 
-    private void GenerateFoliage() {}
-
-    // FIX THIS
+    // Send the relevant chunk data back to the client.
     [ServerRpc(RequireOwnership = false)]
-    public void RequestChunkServerRpc(Vector2 playerHexCoord, ServerRpcParams rpcParams = default)
+    public void RequestChunkServerRpc(Vector3 playerHexCoord, ServerRpcParams rpcParams = default)
     {
-
-        // Send the relevant chunk data back to the client.
-        //SendChunkToClientRpc(chunkData, rpcParams.Receive.SenderClientId);
-        return;
+        Vector2Int playerTileCoord = WorldCoordToTileCoord(playerHexCoord, TileSize, MapWidth, MapHeight);
+        
+        // Find which tiles are in the chunk
+        Vector2Int chunk = new(
+            Mathf.FloorToInt(playerTileCoord.x / (float)ChunkSize),
+            Mathf.FloorToInt(playerTileCoord.y / (float ) ChunkSize)
+        );
+        SendChunkToClientRpc(chunk, rpcParams.Receive.SenderClientId);
     }
 
     // FIX THIS
@@ -124,15 +126,24 @@ public class MapManager : NetworkBehaviour
         Debug.Log($"Chunk data sent to client {clientId} for chunk at {chunkData}");
 
         // Use chunk data to initiate tiles and objects
+        for (int i = chunkData.x * ChunkSize; i < chunkData.x * ChunkSize + ChunkSize - 1; i++)
+        {
+            for (int j = chunkData.y * ChunkSize; i < chunkData.y * ChunkSize + ChunkSize - 1; i++)
+            {
+                NetworkObject tileNetworkObject = _tileTypeToPrefab[_mapData[i, j].TileType];
+                NetworkObject tile = Instantiate(tileNetworkObject, _mapData[i, j].WorldPosition, tileNetworkObject.transform.rotation);
+                tile.Spawn();
+            }
+        }
     }
 
     // Return Hex coord based on the world position
-    public static Vector2Int WorldCoordToHexCoord(Vector3 worldCoord, float TileRadius, int MapWidth, int MapHeight)
+    public static Vector2Int WorldCoordToTileCoord(Vector3 worldCoord, float TileSize, int MapWidth, int MapHeight)
     {
-        float a = Mathf.Sqrt(3f) * TileRadius / 2;
+        float a = Mathf.Sqrt(3f) * TileSize / 2;
 
         // Edge case to account for: worldCoord.z or x are negative
-        int hexY = Mathf.FloorToInt(worldCoord.z / (1.5f * TileRadius));
+        int hexY = Mathf.FloorToInt(worldCoord.z / (1.5f * TileSize));
         float xOffset = (hexY % 2 != 0) ? a : 0;
         int hexX = Mathf.FloorToInt((worldCoord.x - xOffset) / (2f * a));
 
@@ -160,7 +171,7 @@ public class MapManager : NetworkBehaviour
         }
         if (outOfBounds)
         {
-            Debug.Log($"WorldCoordToHexCoord error: worldCoord out of bounds. Returning closest HexTile");
+            Debug.Log($"WorldCoordToTileCoord error: worldCoord out of bounds. Returning closest HexTile");
         }
 
         return new(hexX, hexY);
