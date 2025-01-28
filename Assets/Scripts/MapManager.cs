@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Tilemaps;
 
 public class MapManager : NetworkBehaviour
@@ -109,30 +110,36 @@ public class MapManager : NetworkBehaviour
     public void RequestChunkServerRpc(Vector3 playerHexCoord, ServerRpcParams rpcParams = default)
     {
         Vector2Int playerTileCoord = WorldCoordToTileCoord(playerHexCoord, TileSize, MapWidth, MapHeight);
-        
+        List<Vector2Int> chunks = new();
         // Find which tiles are in the chunk
         Vector2Int chunk = new(
             Mathf.FloorToInt(playerTileCoord.x / (float)ChunkSize),
             Mathf.FloorToInt(playerTileCoord.y / (float ) ChunkSize)
         );
-        SendChunkToClientRpc(chunk, rpcParams.Receive.SenderClientId);
+        chunks.Add(chunk);
+
+        // Add logic for finding if player is getting near the chunk border and need to spawn some neighbor chunks as well
+
+        // Do we need to also spawn chunks that other players are in?
+
+        SendChunkToClientRpc(chunks, rpcParams.Receive.SenderClientId);
     }
 
-    // FIX THIS
     [ClientRpc]
-    public void SendChunkToClientRpc(Vector2Int chunkData, ulong clientId)
+    public void SendChunkToClientRpc(List<Vector2Int> chunks, ulong clientId)
     {
-        // The server sends chunk data to the client.
-        Debug.Log($"Chunk data sent to client {clientId} for chunk at {chunkData}");
-
         // Use chunk data to initiate tiles and objects
-        for (int i = chunkData.x * ChunkSize; i < chunkData.x * ChunkSize + ChunkSize - 1; i++)
+        foreach (Vector2Int chunk in chunks)
         {
-            for (int j = chunkData.y * ChunkSize; i < chunkData.y * ChunkSize + ChunkSize - 1; i++)
+            for (int i = chunk.x * ChunkSize; i < chunk.x * ChunkSize + ChunkSize - 1; i++)
             {
-                NetworkObject tileNetworkObject = _tileTypeToPrefab[_mapData[i, j].TileType];
-                NetworkObject tile = Instantiate(tileNetworkObject, _mapData[i, j].WorldPosition, tileNetworkObject.transform.rotation);
-                tile.Spawn();
+                for (int j = chunk.y * ChunkSize; i < chunk.y * ChunkSize + ChunkSize - 1; i++)
+                {
+                    // This only spawns tiles. Handle entities too in the future
+                    NetworkObject tileNetworkObject = _tileTypeToPrefab[_mapData[i, j].TileType];
+                    NetworkObject tile = Instantiate(tileNetworkObject, _mapData[i, j].WorldPosition, tileNetworkObject.transform.rotation);
+                    tile.Spawn();
+                }
             }
         }
     }
