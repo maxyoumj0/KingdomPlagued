@@ -124,11 +124,11 @@ public class MapManager : NetworkBehaviour
 
         // Do we need to also spawn chunks that other players are in?
         chunksToLoad = chunksToLoad.Where(chunk => !_loadedChunks.Contains(chunk)).ToList();
-        SendChunkToClientRpc(chunksToLoad, rpcParams.Receive.SenderClientId);
+        SendChunkToClientRpc(chunksToLoad.ToArray(), rpcParams.Receive.SenderClientId);
     }
 
     [ClientRpc]
-    public void SendChunkToClientRpc(List<Vector2Int> chunks, ulong clientId)
+    public void SendChunkToClientRpc(Vector2Int[] chunks, ulong clientId)
     {
         // Use chunk data to initiate tiles and objects
         foreach (Vector2Int chunk in chunks)
