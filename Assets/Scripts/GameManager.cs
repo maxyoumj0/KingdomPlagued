@@ -40,7 +40,7 @@ public class GameManager : NetworkBehaviour
 
         // Creating testing spawnPoint automate populating `spawnPoints` later
         SpawnPoint = new(
-            new Vector3(0, 40, -20),
+            new Vector3(10, 40, 10),
             Quaternion.identity
         );
     }

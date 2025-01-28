@@ -5,6 +5,7 @@ using Unity.Netcode;
 using UnityEngine.InputSystem;
 using Vector2 = UnityEngine.Vector2;
 using static UnityEngine.UIElements.UxmlAttributeDescription;
+using Vector3 = UnityEngine.Vector3;
 
 public class Player : NetworkBehaviour
 {
@@ -12,7 +13,7 @@ public class Player : NetworkBehaviour
     public NetworkList<NetworkObjectReference> SelectedEntities = new();
     public GameObject PlayerCamera;
 
-    private Vector2Int _playerHexTileCoord = new(0, 0);
+    private Vector2Int _playerTileCoord = new(0, 0);
     private int _mapHeight;
     private int _mapWidth;
     private float _tileRadius;
@@ -20,6 +21,8 @@ public class Player : NetworkBehaviour
     private bool _placingBuilding = false;
     private Building _buildingBeingPlaced;
     private InputAction _leftClickAction;
+    private Vector3 _lastPlayerPos;
+    private float _posChangeThreshold = 0.5f;
 
     private void Awake()
     {
@@ -29,6 +32,7 @@ public class Player : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+        _lastPlayerPos = transform.position;
         if (IsOwner)
         {
             // Enable the player's camera if this is the local player
@@ -44,15 +48,13 @@ public class Player : NetworkBehaviour
 
     private void Update()
     {
-        // Request for chunks when Player moved to a different hex (Modify this to chunk later)
-        if (transform.hasChanged && PlayerMovedHex())
+        if (!IsClient) return;
+
+        // Request for chunks when Player moved to a different tile (Modify this to chunk later)
+        Vector3 offset = _lastPlayerPos - transform.position;
+        if ((offset.x > _posChangeThreshold || offset.z > _posChangeThreshold) && PlayerMovedTile())
         {
-            _mapManager.RequestChunkServerRpc(
-                new Vector2(
-                    _playerHexTileCoord.x,
-                    _playerHexTileCoord.y
-                )
-            );
+            _mapManager.RequestChunkServerRpc(transform.position);
         }
 
         if (_placingBuilding)
@@ -70,12 +72,12 @@ public class Player : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void InitializePlayerClientRpc(int mapHeight, int mapWidth, float tileRadius, Vector2Int spawnPointHexCoord)
+    public void InitializePlayerClientRpc(int mapHeight, int mapWidth, float tileRadius, Vector2Int spawnPointTileCoord)
     {
         _mapHeight = mapHeight;
         _mapWidth = mapWidth;
         _tileRadius = tileRadius;
-        _playerHexTileCoord = spawnPointHexCoord;
+        _playerTileCoord = spawnPointTileCoord;
     }
 
     public void AddToSelection(NetworkObjectReference entity)
@@ -108,14 +110,14 @@ public class Player : NetworkBehaviour
         SelectedEntities.Clear();
     }
 
-    private bool PlayerMovedHex()
+    private bool PlayerMovedTile()
     {
         if (_mapManager != null)
         {
-            Vector2Int convertedHexCoord = MapManager.WorldCoordToHexCoord(transform.position, _tileRadius, _mapWidth, _mapHeight);
-            if (!_playerHexTileCoord.Equals(convertedHexCoord))
+            Vector2Int convertedTileCoord = MapManager.WorldCoordToTileCoord(transform.position, _tileRadius, _mapWidth, _mapHeight);
+            if (!_playerTileCoord.Equals(convertedTileCoord))
             {
-                _playerHexTileCoord = convertedHexCoord;
+                _playerTileCoord = convertedTileCoord;
                 return true;
             }
         }
