@@ -3,7 +3,9 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using UnityEngine.Tilemaps;
+using Vector3 = UnityEngine.Vector3;
 
 public class MapManager : NetworkBehaviour
 {
@@ -23,6 +25,7 @@ public class MapManager : NetworkBehaviour
 
     private Dictionary<TileType, NetworkObject> _tileTypeToPrefab;
     private TileData[,] _mapData;
+    private HashSet<Vector2Int> _loadedChunks = new();
 
     public override void OnNetworkSpawn()
     {
@@ -110,19 +113,18 @@ public class MapManager : NetworkBehaviour
     public void RequestChunkServerRpc(Vector3 playerWorldPos, ServerRpcParams rpcParams = default)
     {
         Vector2Int playerTileCoord = WorldCoordToTileCoord(playerWorldPos, TileSize, MapWidth, MapHeight);
-        List<Vector2Int> chunks = new();
+        List<Vector2Int> chunksToLoad = new();
         // Find which tiles are in the chunk
-        Vector2Int chunk = new(
+        chunksToLoad.Add(new(
             Mathf.FloorToInt(playerTileCoord.x / (float)ChunkSize),
-            Mathf.FloorToInt(playerTileCoord.y / (float ) ChunkSize)
-        );
-        chunks.Add(chunk);
+            Mathf.FloorToInt(playerTileCoord.y / (float)ChunkSize)
+        ));
 
         // Add logic for finding if player is getting near the chunk border and need to spawn some neighbor chunks as well
 
         // Do we need to also spawn chunks that other players are in?
-
-        SendChunkToClientRpc(chunks, rpcParams.Receive.SenderClientId);
+        chunksToLoad = chunksToLoad.Where(chunk => !_loadedChunks.Contains(chunk)).ToList();
+        SendChunkToClientRpc(chunksToLoad, rpcParams.Receive.SenderClientId);
     }
 
     [ClientRpc]
