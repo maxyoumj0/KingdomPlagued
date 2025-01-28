@@ -18,7 +18,7 @@
 - **Two Levels of Maps:**
   - **Main Gameplay Map:** Focused on detailed city building and combat.
   - **Interactive World Map:** Provides a real-time overview of the world, similar to *RimWorld*.  
-- **Hex Tile-Based Map:**  
+- **Square Tile-Based Map:**  
   - Comprised of tiles/blocks.
   - Diverse Biomes:
     - Forest
@@ -91,6 +91,15 @@
     - Kingdom inventory.  
 - **Top Screen Controls:**  
   - Play/Pause/1.5x Speed/2x Speed.
+
+---
+
+### Implementation Detials
+- **Map Rendering**
+  - All the data about the map (tiles) and entities will be stored on the server/host
+  - Entities will be pooled, meaning that `x` numbere of each entities will be instanted and spawned, but not rendered at all times
+  - Chunk system will be implemented so that only the chunks that the players are in will be loaded
+    - If a player gets near an edge of the chunk, then the approporiate neighbor chunks will be loaded as well to simulate a connected world that's loaded at all times.
 
 ---
 
