@@ -107,9 +107,9 @@ public class MapManager : NetworkBehaviour
 
     // Send the relevant chunk data back to the client.
     [ServerRpc(RequireOwnership = false)]
-    public void RequestChunkServerRpc(Vector3 playerHexCoord, ServerRpcParams rpcParams = default)
+    public void RequestChunkServerRpc(Vector3 playerWorldPos, ServerRpcParams rpcParams = default)
     {
-        Vector2Int playerTileCoord = WorldCoordToTileCoord(playerHexCoord, TileSize, MapWidth, MapHeight);
+        Vector2Int playerTileCoord = WorldCoordToTileCoord(playerWorldPos, TileSize, MapWidth, MapHeight);
         List<Vector2Int> chunks = new();
         // Find which tiles are in the chunk
         Vector2Int chunk = new(
