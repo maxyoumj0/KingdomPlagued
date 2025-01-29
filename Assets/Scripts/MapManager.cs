@@ -11,7 +11,7 @@ public class MapManager : NetworkBehaviour
 {
     public int MapWidth { get; set; } = 50;
     public int MapHeight { get; set; } = 50;
-    public float TileSize { get; set; }
+    public float TileSize;
     public int ChunkSize { get; set; } = 32;
     public float Seed = 10001f;
 
@@ -109,10 +109,11 @@ public class MapManager : NetworkBehaviour
     }
 
     // Send the relevant chunk data back to the client.
-    [ServerRpc(RequireOwnership = false)]
+    [ServerRpc]
     public void RequestChunkServerRpc(Vector3 playerWorldPos, ServerRpcParams rpcParams = default)
     {
-        Vector2Int playerTileCoord = WorldCoordToTileCoord(playerWorldPos, TileSize, MapWidth, MapHeight);
+        if (!IsServer) return;
+        Vector3Int playerTileCoord = WorldCoordToTileCoord(playerWorldPos, TileSize, MapWidth, MapHeight);
         List<Vector2Int> chunksToLoad = new();
         // Find which tiles are in the chunk
         chunksToLoad.Add(new(
@@ -124,18 +125,12 @@ public class MapManager : NetworkBehaviour
 
         // Do we need to also spawn chunks that other players are in?
         chunksToLoad = chunksToLoad.Where(chunk => !_loadedChunks.Contains(chunk)).ToList();
-        SendChunkToClientRpc(chunksToLoad.ToArray(), rpcParams.Receive.SenderClientId);
-    }
 
-    [ClientRpc]
-    public void SendChunkToClientRpc(Vector2Int[] chunks, ulong clientId)
-    {
-        // Use chunk data to initiate tiles and objects
-        foreach (Vector2Int chunk in chunks)
+        foreach (Vector2Int chunk in chunksToLoad)
         {
             for (int i = chunk.x * ChunkSize; i < chunk.x * ChunkSize + ChunkSize - 1; i++)
             {
-                for (int j = chunk.y * ChunkSize; i < chunk.y * ChunkSize + ChunkSize - 1; i++)
+                for (int j = chunk.y * ChunkSize; j < chunk.y * ChunkSize + ChunkSize - 1; j++)
                 {
                     // This only spawns tiles. Handle entities too in the future
                     NetworkObject tileNetworkObject = _tileTypeToPrefab[_mapData[i, j].TileType];
@@ -146,43 +141,17 @@ public class MapManager : NetworkBehaviour
         }
     }
 
-    // Return Hex coord based on the world position
-    public static Vector2Int WorldCoordToTileCoord(Vector3 worldCoord, float TileSize, int MapWidth, int MapHeight)
+    // Return Tile coord based on the world position
+    public static Vector3Int WorldCoordToTileCoord(Vector3 worldCoord, float TileSize, int MapWidth, int MapHeight)
     {
-        float a = Mathf.Sqrt(3f) * TileSize / 2;
+        int tileX = Mathf.FloorToInt(worldCoord.x / TileSize);
+        int tileY = Mathf.FloorToInt(worldCoord.z / TileSize);
 
-        // Edge case to account for: worldCoord.z or x are negative
-        int hexY = Mathf.FloorToInt(worldCoord.z / (1.5f * TileSize));
-        float xOffset = (hexY % 2 != 0) ? a : 0;
-        int hexX = Mathf.FloorToInt((worldCoord.x - xOffset) / (2f * a));
+        if (tileX < 0) { tileX = 0; }
+        if (tileX > MapWidth) { tileX = MapWidth; }
+        if (tileY < 0) { tileY = 0; }
+        if (tileY > MapHeight) { tileY = MapHeight; }
 
-        // check out of bounds
-        bool outOfBounds = false;
-        if (worldCoord.x < (-1 * a))
-        {
-            outOfBounds = true;
-            hexX = 0;
-        }
-        else if (worldCoord.x > ((MapWidth - 1) * a + a))
-        {
-            outOfBounds = true;
-            hexX = MapWidth;
-        }
-        else if (worldCoord.z < (-1 * a))
-        {
-            outOfBounds = true;
-            hexY = 0;
-        }
-        else if (worldCoord.z > (MapHeight - 1) * a + a)
-        {
-            outOfBounds = true;
-            hexY = MapHeight;
-        }
-        if (outOfBounds)
-        {
-            Debug.Log($"WorldCoordToTileCoord error: worldCoord out of bounds. Returning closest HexTile");
-        }
-
-        return new(hexX, hexY);
+        return new(tileX, 0, tileY);
     }
 }

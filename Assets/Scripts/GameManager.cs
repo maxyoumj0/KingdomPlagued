@@ -22,8 +22,8 @@ public class GameManager : NetworkBehaviour
     public int MapHeight = 100;
 
     private float _tileSize;
-
-    private NetworkObject _mapManager;
+    public NetworkObject MapManager;
+    private bool _mapGenerated = false;
     private Dictionary<ulong, NetworkObject> _players = new();
     private Dictionary<ulong, GameObject> _entities = new();
     
@@ -80,18 +80,27 @@ public class GameManager : NetworkBehaviour
         NetworkManager.Singleton.StartHost();
 
         // Instantiate MapManager NetworkObject and generate the map
-        _mapManager = Instantiate(MapManagerPrefab, Vector3.zero, Quaternion.identity);
-        _mapManager.Spawn();
-        MapManager mapManagerComponent = _mapManager.GetComponent<MapManager>();
+        MapManager = Instantiate(MapManagerPrefab, Vector3.zero, Quaternion.identity);
+        MapManager.Spawn();
+        MapManager mapManagerComponent = MapManager.GetComponent<MapManager>();
         mapManagerComponent.MapHeight = MapHeight;
         mapManagerComponent.MapWidth = MapWidth;
         _tileSize = mapManagerComponent.TileSize;
         mapManagerComponent.GenerateMap();
+        _mapGenerated = true;
+
+        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        {
+            if (!_players.ContainsKey(clientId))
+            {
+                SpawnPlayer(clientId);
+            }
+        }
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        if (IsServer)
+        if (IsServer && _mapGenerated)
         {
             SpawnPlayer(clientId);
         }
@@ -117,7 +126,7 @@ public class GameManager : NetworkBehaviour
         {
             networkObject.SpawnAsPlayerObject(clientId, true);
             // change later to a real spawn point
-            playerInstance.GetComponent<Player>().InitializePlayerClientRpc(MapHeight, MapWidth, _tileSize, Vector2Int.zero);
+            playerInstance.GetComponent<Player>().InitializePlayerClientRpc(MapHeight, MapWidth, _tileSize, Vector3Int.zero);
             _players[clientId] = playerInstance;
         }
         else
@@ -127,9 +136,9 @@ public class GameManager : NetworkBehaviour
     }
 
     [ServerRpc]
-    public void SpawnBuildingBlueprintServerRpc(BuildingEnum buildingBlueprint, Vector2 playerMousePos, Quaternion buildingRotation, ServerRpcParams rpcParams = default)
+    public void SpawnBuildingBlueprintServerRpc(BuildingEnum buildingBlueprint, Vector2 playerMousePos, ServerRpcParams rpcParams = default)
     {
-        var buildingObject = Instantiate(BuildingRegistryObject.GetPrefab(buildingBlueprint), playerMousePos, buildingRotation);
+        var buildingObject = Instantiate(BuildingRegistryObject.GetPrefab(buildingBlueprint), playerMousePos, BuildingRegistryObject.GetPrefab(buildingBlueprint).transform.rotation);
         var networkObject = buildingObject.GetComponent<NetworkObject>();
         if (networkObject == null)
         {

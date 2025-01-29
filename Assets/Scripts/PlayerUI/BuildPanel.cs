@@ -6,7 +6,6 @@ public class BuildPanel : MonoBehaviour
 {
     public GameObject InteractPanel;
     private GameObject _localPlayer;
-    private Quaternion _defaultBuildingRotation = Quaternion.identity;
     void Awake()
     {
         gameObject.SetActive(false);
@@ -35,7 +34,7 @@ public class BuildPanel : MonoBehaviour
 
     public void TestBuilding()
     {
-        GameManager.Instance.SpawnBuildingBlueprintServerRpc(BuildingEnum.TestBuilding, Mouse.current.position.ReadValue(), _defaultBuildingRotation);
+        GameManager.Instance.SpawnBuildingBlueprintServerRpc(BuildingEnum.TestBuilding, Mouse.current.position.ReadValue());
     }
 
     public void Back()

@@ -13,7 +13,7 @@ public class Player : NetworkBehaviour
     public NetworkList<NetworkObjectReference> SelectedEntities = new();
     public GameObject PlayerCamera;
 
-    private Vector2Int _playerTileCoord = new(0, 0);
+    private Vector3Int _playerTileCoord = new(0, 0);
     private int _mapHeight;
     private int _mapWidth;
     private float _tileRadius;
@@ -22,7 +22,7 @@ public class Player : NetworkBehaviour
     private Building _buildingBeingPlaced;
     private InputAction _leftClickAction;
     private Vector3 _lastPlayerPos;
-    private float _posChangeThreshold = 0.5f;
+    private float _posChangeThreshold = 1;
 
     private void Awake()
     {
@@ -32,6 +32,7 @@ public class Player : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+        _mapManager = NetworkObject.FindFirstObjectByType<MapManager>().GetComponent<MapManager>();
         _lastPlayerPos = transform.position;
         if (IsOwner)
         {
@@ -72,12 +73,13 @@ public class Player : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void InitializePlayerClientRpc(int mapHeight, int mapWidth, float tileRadius, Vector2Int spawnPointTileCoord)
+    public void InitializePlayerClientRpc(int mapHeight, int mapWidth, float tileRadius, Vector3Int spawnPointTileCoord)
     {
         _mapHeight = mapHeight;
         _mapWidth = mapWidth;
         _tileRadius = tileRadius;
         _playerTileCoord = spawnPointTileCoord;
+        _mapManager.RequestChunkServerRpc(transform.position);
     }
 
     public void AddToSelection(NetworkObjectReference entity)
@@ -114,7 +116,7 @@ public class Player : NetworkBehaviour
     {
         if (_mapManager != null)
         {
-            Vector2Int convertedTileCoord = MapManager.WorldCoordToTileCoord(transform.position, _tileRadius, _mapWidth, _mapHeight);
+            Vector3Int convertedTileCoord = MapManager.WorldCoordToTileCoord(transform.position, _tileRadius, _mapWidth, _mapHeight);
             if (!_playerTileCoord.Equals(convertedTileCoord))
             {
                 _playerTileCoord = convertedTileCoord;
