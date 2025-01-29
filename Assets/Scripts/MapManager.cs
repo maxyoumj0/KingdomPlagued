@@ -127,13 +127,14 @@ public class MapManager : NetworkBehaviour
         // Do we need to also spawn chunks that other players are in?
         chunksToLoad = chunksToLoad.Where(chunk => !_loadedChunks.Contains(chunk)).ToList();
 
-        StartCoroutine(LoadChunks(chunksToLoad.ToArray()));
+        LoadChunks(chunksToLoad.ToArray());
     }
 
-    private IEnumerator LoadChunks(Vector2Int[] chunksToLoad)
+    private void LoadChunks(Vector2Int[] chunksToLoad)
     {
         foreach (Vector2Int chunk in chunksToLoad)
         {
+            _loadedChunks.Add(chunk);
             for (int i = chunk.x * ChunkSize; i < chunk.x * ChunkSize + ChunkSize - 1; i++)
             {
                 for (int j = chunk.y * ChunkSize; j < chunk.y * ChunkSize + ChunkSize - 1; j++)
@@ -142,7 +143,6 @@ public class MapManager : NetworkBehaviour
                     NetworkObject tileNetworkObject = _tileTypeToPrefab[_mapData[i, j].TileType];
                     NetworkObject tile = Instantiate(tileNetworkObject, _mapData[i, j].WorldPosition, tileNetworkObject.transform.rotation);
                     tile.Spawn();
-                    yield return null;
                 }
             }
         }
