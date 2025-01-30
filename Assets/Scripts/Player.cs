@@ -21,8 +21,6 @@ public class Player : NetworkBehaviour
     private bool _placingBuilding = false;
     private Building _buildingBeingPlaced;
     private InputAction _leftClickAction;
-    private Vector3 _lastPlayerPos;
-    private float _posChangeThreshold = 1;
 
     private void Awake()
     {
@@ -33,7 +31,6 @@ public class Player : NetworkBehaviour
     {
         base.OnNetworkSpawn();
         _mapManager = NetworkObject.FindFirstObjectByType<MapManager>().GetComponent<MapManager>();
-        _lastPlayerPos = transform.position;
         if (IsOwner)
         {
             // Enable the player's camera if this is the local player
@@ -52,8 +49,7 @@ public class Player : NetworkBehaviour
         if (!IsClient) return;
 
         // Request for chunks when Player moved to a different tile (Modify this to chunk later)
-        Vector3 offset = _lastPlayerPos - transform.position;
-        if ((offset.x > _posChangeThreshold || offset.z > _posChangeThreshold) && PlayerMovedTile())
+        if (PlayerMovedTile())
         {
             _mapManager.RequestChunkServerRpc(transform.position);
         }
