@@ -1,7 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 
-public class Entity : NetworkBehaviour
+public class EntityParent : NetworkBehaviour
 {
     // Network variable to track selection status
     public NetworkVariable<bool> IsSelected = new(
