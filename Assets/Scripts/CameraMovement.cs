@@ -24,22 +24,26 @@ public class PlayerCamera : NetworkBehaviour
     private void Update()
     {
         Vector2 moveValue = _moveAction.ReadValue<Vector2>();
-        transform.position += new Vector3(moveValue.x, 0, moveValue.y) * _moveSpeed * Time.deltaTime;
-
-        if (Application.isFocused) {
-            if (Mouse.current.position.ReadValue().x > Screen.width - _edgeSize) {
-                transform.position += Vector3.right * _moveSpeed * Time.deltaTime;
-            }
-            if (Mouse.current.position.ReadValue().x < _edgeSize) {
-                transform.position -= Vector3.right * _moveSpeed * Time.deltaTime;
-            }
-            if (Mouse.current.position.ReadValue().y > Screen.height - _edgeSize) {
-                transform.position += Vector3.forward * _moveSpeed * Time.deltaTime;
-            }
-            if (Mouse.current.position.ReadValue().y < _edgeSize) {
-                transform.position -= Vector3.forward * _moveSpeed * Time.deltaTime;
+        if (moveValue != Vector2.zero)  {
+            transform.position += new Vector3(moveValue.x, 0, moveValue.y) * _moveSpeed * Time.deltaTime;
+        }
+        else {
+            if (Application.isFocused) {
+                if (Mouse.current.position.ReadValue().x > Screen.width - _edgeSize) {
+                    transform.position += Vector3.right * _moveSpeed * Time.deltaTime;
+                }
+                if (Mouse.current.position.ReadValue().x < _edgeSize) {
+                    transform.position -= Vector3.right * _moveSpeed * Time.deltaTime;
+                }
+                if (Mouse.current.position.ReadValue().y > Screen.height - _edgeSize) {
+                    transform.position += Vector3.forward * _moveSpeed * Time.deltaTime;
+                }
+                if (Mouse.current.position.ReadValue().y < _edgeSize) {
+                    transform.position -= Vector3.forward * _moveSpeed * Time.deltaTime;
+                }
             }
         }
+
 
         float zoomValue = _zoomAction.ReadValue<float>();
         if (zoomValue > 0)

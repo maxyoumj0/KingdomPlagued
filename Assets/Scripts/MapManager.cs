@@ -119,7 +119,7 @@ public class MapManager : NetworkBehaviour
         // Find which tiles are in the chunk
         chunksToLoad.Add(new(
             Mathf.FloorToInt(playerTileCoord.x / (float)ChunkSize),
-            Mathf.FloorToInt(playerTileCoord.y / (float)ChunkSize)
+            Mathf.FloorToInt(playerTileCoord.z / (float)ChunkSize)
         ));
 
         // Add logic for finding if player is getting near the chunk border and need to spawn some neighbor chunks as well
@@ -127,22 +127,29 @@ public class MapManager : NetworkBehaviour
         // Do we need to also spawn chunks that other players are in?
         chunksToLoad = chunksToLoad.Where(chunk => !_loadedChunks.Contains(chunk)).ToList();
 
-        LoadChunks(chunksToLoad.ToArray());
+        StartCoroutine(LoadChunks(chunksToLoad.ToArray()));
     }
 
-    private void LoadChunks(Vector2Int[] chunksToLoad)
+    private IEnumerator LoadChunks(Vector2Int[] chunksToLoad)
     {
+        int tilesSpawned = 0;
         foreach (Vector2Int chunk in chunksToLoad)
         {
             _loadedChunks.Add(chunk);
-            for (int i = chunk.x * ChunkSize; i < chunk.x * ChunkSize + ChunkSize - 1; i++)
+            for (int i = chunk.x * ChunkSize; i < chunk.x * ChunkSize + ChunkSize; i++)
             {
-                for (int j = chunk.y * ChunkSize; j < chunk.y * ChunkSize + ChunkSize - 1; j++)
+                for (int j = chunk.y * ChunkSize; j < chunk.y * ChunkSize + ChunkSize; j++)
                 {
                     // This only spawns tiles. Handle entities too in the future
                     NetworkObject tileNetworkObject = _tileTypeToPrefab[_mapData[i, j].TileType];
                     NetworkObject tile = Instantiate(tileNetworkObject, _mapData[i, j].WorldPosition, tileNetworkObject.transform.rotation);
                     tile.Spawn();
+
+                    // Looks cool 😎
+                    tilesSpawned++;
+                    if (tilesSpawned % 10 == 0) {
+                        yield return null;
+                    }
                 }
             }
         }
@@ -151,14 +158,19 @@ public class MapManager : NetworkBehaviour
     // Return Tile coord based on the world position
     public static Vector3Int WorldCoordToTileCoord(Vector3 worldCoord, float TileSize, int MapWidth, int MapHeight)
     {
+        // TODO: The camera is pointed down at an angle, so we add this offset to render chunks 
+        // after moving on the z-axis when we expect to. Later on, the camera should raycast to 
+        // the y=0 axis for the world coordinates.
+        int zOffset = 25;
+
         int tileX = Mathf.FloorToInt(worldCoord.x / TileSize);
-        int tileY = Mathf.FloorToInt(worldCoord.z / TileSize);
+        int tileZ = Mathf.FloorToInt(worldCoord.z + zOffset / TileSize);
 
         if (tileX < 0) { tileX = 0; }
         if (tileX > MapWidth) { tileX = MapWidth; }
-        if (tileY < 0) { tileY = 0; }
-        if (tileY > MapHeight) { tileY = MapHeight; }
+        if (tileZ < 0) { tileZ = 0; }
+        if (tileZ > MapHeight) { tileZ = MapHeight; }
 
-        return new(tileX, 0, tileY);
+        return new(tileX, 0, tileZ);
     }
 }
