@@ -6,6 +6,7 @@ using UnityEngine;
 public class MapManagerAuthoring : MonoBehaviour
 {
     public GameObject DefaultTilePrefab;
+    public int ChunkSize;
     public int MapWidth;
     public int MapHeight;
     public float Seed;
@@ -18,6 +19,7 @@ public class MapManagerAuthoring : MonoBehaviour
             AddComponent(entity, new MapManagerComponent
             {
                 TileDataBlob = default,
+                ChunkSize = authoring.ChunkSize,
                 TileSize = authoring.DefaultTilePrefab.GetComponentInChildren<Renderer>().bounds.size.x,
                 MapWidth = authoring.MapWidth,
                 MapHeight = authoring.MapHeight,
@@ -30,6 +32,7 @@ public class MapManagerAuthoring : MonoBehaviour
 public struct MapManagerComponent : IComponentData
 {
     public BlobAssetReference<TileBlob> TileDataBlob;  // Static Map Data
+    public int ChunkSize;
     public float TileSize;
     public int MapWidth;
     public int MapHeight;
