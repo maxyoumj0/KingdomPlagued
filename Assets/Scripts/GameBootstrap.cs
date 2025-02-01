@@ -6,7 +6,18 @@ public class GameBoot : ClientServerBootstrap
 {
     public override bool Initialize(string defaultWorldName)
     {
+        // Use 0 to manually connect
         AutoConnectPort = 7979;
-        return base.Initialize(defaultWorldName);
+
+        if (AutoConnectPort != 0)
+        {
+            return base.Initialize(defaultWorldName);
+        }
+        else
+        {
+            AutoConnectPort = 0;
+            CreateLocalWorld(defaultWorldName);
+            return true;
+        }
     }
 }

@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
+[RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
 partial struct ChunkReceiverSystem : ISystem
 {
@@ -17,13 +18,14 @@ partial struct ChunkReceiverSystem : ISystem
     {
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
 
+        // On LoadChunkRpc
         foreach ((RefRO<LoadChunkRpc> rpc, Entity entity) in SystemAPI.Query<RefRO<LoadChunkRpc>>().WithEntityAccess())
         {
             Debug.Log($"Loading chunk at {rpc.ValueRO.ChunkCoord}");
 
             // Check if chunk already exists
             bool chunkExists = false;
-            foreach (var (chunk, chunkEntity) in SystemAPI.Query<RefRO<ChunkComponent>>().WithEntityAccess())
+            foreach ((RefRO<ChunkComponent> chunk, Entity chunkEntity) in SystemAPI.Query<RefRO<ChunkComponent>>().WithEntityAccess())
             {
                 if (chunk.ValueRO.ChunkCoord.Equals(rpc.ValueRO.ChunkCoord))
                 {
@@ -48,7 +50,29 @@ partial struct ChunkReceiverSystem : ISystem
             ecb.DestroyEntity(entity);
         }
 
-        // TODO: Add logic for unloading chunks
+        // On UnloadChunkRpc
+        foreach ((RefRO<UnloadChunkRpc> rpc, Entity entity) in SystemAPI.Query<RefRO<UnloadChunkRpc>>().WithEntityAccess())
+        {
+            Debug.Log($"Unloading chunk at {rpc.ValueRO.ChunkCoord}");
+
+            // Check if chunk was already unloaded
+            bool chunkUnloaded = true;
+            foreach ((RefRO<ChunkComponent> chunk, Entity chunkEntity) in SystemAPI.Query<RefRO<ChunkComponent>>().WithEntityAccess())
+            {
+                if (chunk.ValueRO.ChunkCoord.Equals(rpc.ValueRO.ChunkCoord))
+                {
+                    chunkUnloaded = false;
+                    break;
+                }
+            }
+
+            // Unload chunk if it's still loaded
+            if (!chunkUnloaded)
+            {
+                ecb.DestroyEntity(entity);
+                // TODO: Despawn tile entities for this chunk
+            }
+        }
 
         ecb.Playback(state.EntityManager);
     }

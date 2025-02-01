@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 
+[RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct ChunkSyncSystem : ISystem
 {
@@ -20,12 +21,22 @@ partial struct ChunkSyncSystem : ISystem
 
         foreach ((RefRO<ChunkComponent> chunk, Entity entity) in SystemAPI.Query<RefRO<ChunkComponent>>().WithEntityAccess())
         {
+            // Destroy `ChunkComponents` that are no longer active
             if (!chunk.ValueRO.IsLoaded)
+            {
+                Entity unloadRpcEntity = ecb.CreateEntity();
+                // Send an RPC to inform the client to destroy tiles in this chunk
+                ecb.AddComponent(unloadRpcEntity, new UnloadChunkRpc
+                {
+                    ChunkCoord = chunk.ValueRO.ChunkCoord
+                });
+                ecb.DestroyEntity(entity);
                 continue;
+            }
 
-            // Send an RPC to inform the client to load this chunk
-            Entity rpcEntity = ecb.CreateEntity();
-            ecb.AddComponent(rpcEntity, new LoadChunkRpc
+            // Send an RPC to inform the client to create tiles in this chunk
+            Entity loadRpcEntity = ecb.CreateEntity();
+            ecb.AddComponent(loadRpcEntity, new LoadChunkRpc
             {
                 ChunkCoord = chunk.ValueRO.ChunkCoord
             });
@@ -33,8 +44,6 @@ partial struct ChunkSyncSystem : ISystem
             // Reset chunk status after sending
             ecb.SetComponentEnabled<ChunkComponent>(entity, false);
         }
-
-        // TODO: Add logic for unloading chunks
 
         ecb.Playback(state.EntityManager);
     }

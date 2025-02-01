@@ -4,7 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
-[BurstCompile]
+[RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct ChunkLoaderSystem : ISystem
 {
@@ -24,7 +24,7 @@ partial struct ChunkLoaderSystem : ISystem
         int mapHeight = mapManager.MapHeight;
 
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        NativeHashSet<int2> activeChunks = new NativeHashSet<int2>(16, Allocator.Temp);
+        NativeHashSet<int2> activeChunks = new(16, Allocator.Temp);
 
         // Get all players
         foreach ((RefRO<LocalTransform> localTransformComponent, Entity entity) in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<PlayerComponent>().WithEntityAccess())
@@ -32,6 +32,8 @@ partial struct ChunkLoaderSystem : ISystem
             int2 playerChunkCoord = MapManagerHelper.WorldToChunkCoord(new float2(
                 localTransformComponent.ValueRO.Position.x, localTransformComponent.ValueRO.Position.z), chunkSize, mapWidth, mapHeight);
             activeChunks.Add(playerChunkCoord);
+
+            // TODO: Add logic for loading neighoring chunks as well based on player location
         }
 
         // Load chunks if missing
@@ -62,15 +64,14 @@ partial struct ChunkLoaderSystem : ISystem
             }
         }
 
-        // Unload far chunks
-        foreach (var (chunk, entity) in SystemAPI.Query<RefRO<ChunkComponent>>().WithEntityAccess())
+        // Set chunks that should no longer be active
+        foreach ((RefRW<ChunkComponent> chunk, Entity entity) in SystemAPI.Query<RefRW<ChunkComponent>>().WithEntityAccess())
         {
             if (!activeChunks.Contains(chunk.ValueRO.ChunkCoord))
             {
-                ecb.DestroyEntity(entity);
-
-                // TODO: Despawn tile entities for this chunk
+                chunk.ValueRW.IsLoaded = false;
             }
+            // TODO: Despawn tile entities for this chunk
         }
 
         ecb.Playback(state.EntityManager);
