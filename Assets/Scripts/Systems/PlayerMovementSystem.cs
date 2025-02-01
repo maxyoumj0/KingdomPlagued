@@ -4,27 +4,23 @@ using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
 
+[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 partial struct PlayerMovementSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        
+        state.RequireForUpdate<PlayerInput>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        //foreach (var (player, transform, inputBuffer, entity) in
-        //         SystemAPI.Query<RefRW<PlayerComponent>, RefRW<LocalTransform>, InputBuffer<PlayerInput>>()
-        //             .WithEntityAccess())
-        //{
-        //    if (!inputBuffer.TryGetDataAtTick(SystemAPI.GetSingleton<NetworkTime>().ServerTick, out var input))
-        //        continue; // Skip if no input
-
-        //    float3 move = new float3(input.MoveDirection.x, 0, input.MoveDirection.y);
-        //    transform.ValueRW.Position += move * SystemAPI.Time.DeltaTime;
-        //}
+        // TODO: Verify that the query is correct (only moves the owner's player)
+        foreach ((RefRO<PlayerInput> playerInput, RefRW<LocalTransform> localTransform) in SystemAPI.Query<RefRO<PlayerInput>, RefRW<LocalTransform>>().WithAll<Simulate>())
+        {
+            // TODO: Write code that actually sets the localTransform
+        }
     }
 
     [BurstCompile]

@@ -1,20 +1,15 @@
 using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ConnectionManager : MonoBehaviour
 {
-    public string Address;
-    public ushort Port;
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    public string Address = "192.168.1.14";
+    public ushort Port = 7979;
 
     [ContextMenu("Start Host")]
-    void Update()
+    public void StartHost()
     {
         World server = ClientServerBootstrap.CreateServerWorld("ServerWorld");
         World client = ClientServerBootstrap.CreateServerWorld("ClientWorld");
@@ -22,7 +17,7 @@ public class ConnectionManager : MonoBehaviour
         DestroyLocalWorld();
         World.DefaultGameObjectInjectionWorld ??= server;
 
-        // SceneManager.LoadSceneAsync("Game");
+        SceneManager.LoadSceneAsync("GameScene");
         {
             using EntityQuery drvQuery = server.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>());
             drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW
@@ -30,7 +25,22 @@ public class ConnectionManager : MonoBehaviour
         }
 
         {
-            using EntityQuery drvQuery = server.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>());
+            using EntityQuery drvQuery = client.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>());
+            drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW
+                .Connect(client.EntityManager, ClientServerBootstrap.DefaultConnectAddress.WithPort(Port));
+        }
+    }
+
+    [ContextMenu("Start Client")]
+    public void StartClient()
+    {
+        World client = ClientServerBootstrap.CreateServerWorld("ClientWorld");
+
+        DestroyLocalWorld();
+
+        SceneManager.LoadSceneAsync("GameScene");
+        {
+            using EntityQuery drvQuery = client.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>());
             drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW
                 .Connect(client.EntityManager, ClientServerBootstrap.DefaultConnectAddress.WithPort(Port));
         }
