@@ -6,12 +6,12 @@ using UnityEngine.InputSystem;
 [RequireMatchingQueriesForUpdate]
 [UpdateInGroup(typeof(GhostInputSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
-public partial struct PlayerInputSystem : ISystem
+public partial class PlayerInputSystem : SystemBase
 {
     private InputAction _moveAction;
     private InputAction _zoomAction;
 
-    public void OnCreate(ref SystemState state)
+    protected override void OnCreate()
     {
         _moveAction = InputSystem.actions.FindAction("Move");
         _moveAction?.Enable();
@@ -20,7 +20,7 @@ public partial struct PlayerInputSystem : ISystem
         _zoomAction?.Enable();
     }
 
-    public void OnUpdate(ref SystemState state)
+    protected override void OnUpdate()
     {
         InputSystem.Update();
         Vector2 moveValue = _moveAction.ReadValue<Vector2>();
@@ -33,7 +33,7 @@ public partial struct PlayerInputSystem : ISystem
         }
     }
 
-    public void OnDestroy(ref SystemState state)
+    protected override void OnDestroy()
     {
         _moveAction?.Disable();
         _zoomAction?.Disable();

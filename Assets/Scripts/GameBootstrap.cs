@@ -7,7 +7,7 @@ public class GameBoot : ClientServerBootstrap
     public override bool Initialize(string defaultWorldName)
     {
         // Use 0 to manually connect
-        AutoConnectPort = 7979;
+        AutoConnectPort = 0;
 
         if (AutoConnectPort != 0)
         {

@@ -5,14 +5,14 @@ using UnityEngine.SceneManagement;
 
 public class ConnectionManager : MonoBehaviour
 {
-    public string Address = "192.168.1.14";
+    public string Address = "127.0.0.1";
     public ushort Port = 7979;
 
     [ContextMenu("Start Host")]
     public void StartHost()
     {
         World server = ClientServerBootstrap.CreateServerWorld("ServerWorld");
-        World client = ClientServerBootstrap.CreateServerWorld("ClientWorld");
+        World client = ClientServerBootstrap.CreateClientWorld("ClientWorld");
 
         DestroyLocalWorld();
         World.DefaultGameObjectInjectionWorld ??= server;
