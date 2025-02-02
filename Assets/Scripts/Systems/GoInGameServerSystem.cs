@@ -1,7 +1,10 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Scenes;
+using Unity.Transforms;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct GoInGameServerSystem : ISystem
@@ -17,13 +20,33 @@ partial struct GoInGameServerSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        EntityCommandBuffer entityCommandBuffer = new EntityCommandBuffer(Allocator.Temp);
-        foreach ((RefRO<ReceiveRpcCommandRequest> receiveRpcCommandRequest, Entity entity) in SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>>().WithAll<GoInGameRequestRpc>().WithEntityAccess())
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        foreach ((RefRO<ReceiveRpcCommandRequest> receiveRpcCommandRequest, Entity RpcEntity) in SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>>().WithAll<GoInGameRequestRpc>().WithEntityAccess())
         {
-            entityCommandBuffer.AddComponent<NetworkStreamInGame>(receiveRpcCommandRequest.ValueRO.SourceConnection);
-            entityCommandBuffer.DestroyEntity(entity);
+            ecb.AddComponent<NetworkStreamInGame>(receiveRpcCommandRequest.ValueRO.SourceConnection);
+            int networkId = SystemAPI.GetComponent<NetworkId>(receiveRpcCommandRequest.ValueRO.SourceConnection).Value;
+            Entity playerPrefabEntity = SystemAPI.GetSingleton<PrefabReferencesComponent>().PlayerPrefab;
+            Entity playerEntity = ecb.Instantiate(playerPrefabEntity);
+
+            // Set Spawnpoint
+            LocalTransform initialTransform = new LocalTransform
+            {
+                Position = new float3(0, 1, 0),
+                Rotation = quaternion.identity,
+                Scale = 1f
+            };
+            ecb.SetComponent(playerEntity, initialTransform);
+            // Set PlayerComponent
+            PlayerComponent playerComponent = new PlayerComponent
+            {
+                OwnerNetworkId = networkId
+            };
+            // Set GhostId
+            ecb.SetComponent(playerEntity, playerComponent);
+            ecb.SetComponent(playerEntity, new GhostOwner { NetworkId = networkId });
+            ecb.DestroyEntity(RpcEntity);
         }
-        entityCommandBuffer.Playback(state.EntityManager);
+        ecb.Playback(state.EntityManager);
     }
 
     [BurstCompile]
