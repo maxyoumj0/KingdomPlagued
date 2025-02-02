@@ -7,9 +7,10 @@ using UnityEngine.UIElements;
 public class PlayerCamera : NetworkBehaviour
 {
     [SerializeField] private float _moveSpeed = 5.0f;
-    [SerializeField] private int _zoomLevel = 5;
     [SerializeField] private float _edgeSize = 30f;
+    [SerializeField] private int _maxZoomLevel = 5;
 
+    private int _zoomLevel = 0;
     private InputAction _moveAction;
     private InputAction _zoomAction;
 
@@ -44,17 +45,16 @@ public class PlayerCamera : NetworkBehaviour
             }
         }
 
-
         float zoomValue = _zoomAction.ReadValue<float>();
-        if (zoomValue > 0)
+        if (zoomValue > 0 && _zoomLevel < _maxZoomLevel)
         {
             _zoomLevel += 1;
-            transform.position -= new Vector3(0, 50f, 0) * Time.deltaTime;
+            transform.position -= new Vector3(0, 200f, 0) * Time.fixedDeltaTime;
         }
-        else if (zoomValue < 0)
+        else if (zoomValue < 0 && _zoomLevel > -_maxZoomLevel)
         {
             _zoomLevel -= 1;
-            transform.position -= new Vector3(0, -50f, 0) * Time.deltaTime;
+            transform.position -= new Vector3(0, -200f, 0) * Time.fixedDeltaTime;
         }
     }
 }
