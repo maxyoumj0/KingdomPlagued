@@ -5,10 +5,11 @@ public class MainMenuPanel : MonoBehaviour
 {
     public void PlayGame()
     {
+        // TODO: Add field to create new game on the panel and take in a seed
         ConnectionManager connectionManager = GameObject.FindFirstObjectByType<ConnectionManager>();
         if (connectionManager != null)
         {
-            connectionManager.StartHost();
+            connectionManager.NewGame(1000);
         }
     }
 

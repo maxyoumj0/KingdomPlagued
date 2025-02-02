@@ -5,8 +5,9 @@ using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Rendering;
 
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-partial struct MapGenerationSystem : ISystem
+[RequireMatchingQueriesForUpdate]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
+partial struct MapGenClientSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -17,11 +18,27 @@ partial struct MapGenerationSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        foreach ((RefRO<ReceiveRpcCommandRequest> receiveRpcCommandRequest, Entity entity) in SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>>().WithAll<RequestNewWorldRpc>().WithEntityAccess())
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        // Handle client's request to generate the map on client side
+        foreach ((RefRO<GenClientMap> genClientMapTag, Entity entity) in SystemAPI.Query<RefRO<GenClientMap>>().WithEntityAccess())
         {
+            // Request for seed
+            Entity requestSeedEntity = ecb.CreateEntity();
+            ecb.AddComponent<RequestMapManagerSettingsRpc>(requestSeedEntity);
+            ecb.DestroyEntity(entity);
+        }
+
+        // Receive seed
+        foreach ((RefRO<SendMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<SendMapManagerSettingsRpc>>().WithEntityAccess())
+        {
+            // Set MapManagerComponent.Seed
+            Entity mapManagerEntity = SystemAPI.GetSingletonEntity<MapManagerComponent>();
+            RefRW<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRW<MapManagerComponent>(mapManagerEntity);
+            mapManagerComponent.ValueRW.Seed = requestSeedRpc.ValueRO.Seed;
             GenerateWorld(ref state);
             state.EntityManager.DestroyEntity(entity);
         }
+        ecb.Playback(state.EntityManager);
     }
 
     [BurstCompile]
@@ -82,8 +99,10 @@ partial struct MapGenerationSystem : ISystem
             ecb.SetComponent(mapEntity, new MapManagerComponent
             {
                 TileDataBlob = blobReference,
+                TileSize = tileSize,
                 MapWidth = mapWidth,
-                MapHeight = mapHeight
+                MapHeight = mapHeight,
+                Seed = seed
             });
             ecb.Playback(state.EntityManager);
         }

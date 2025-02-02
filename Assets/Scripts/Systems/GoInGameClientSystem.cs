@@ -17,15 +17,20 @@ partial struct GoInGameClientSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        EntityCommandBuffer entityCommandBuffer = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
         foreach ((RefRO<NetworkId> networkId, Entity entity) in SystemAPI.Query<RefRO<NetworkId>>().WithNone<NetworkStreamInGame>().WithEntityAccess())
         {
-            entityCommandBuffer.AddComponent<NetworkStreamInGame>(entity);
-            Entity rpcEntity = entityCommandBuffer.CreateEntity();
-            entityCommandBuffer.AddComponent<GoInGameRequestRpc>(rpcEntity);
-            entityCommandBuffer.AddComponent<SendRpcCommandRequest>(rpcEntity);
+            ecb.AddComponent<NetworkStreamInGame>(entity);
+            Entity rpcEntity = ecb.CreateEntity();
+            ecb.AddComponent<GoInGameRequestRpc>(rpcEntity);
+            ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+            if (networkId.ValueRO.Value != 0)
+            {
+                Entity clientWorldGenEntity = ecb.CreateEntity();
+                ecb.AddComponent<GenClientMap>(clientWorldGenEntity);
+            }
         }
-        entityCommandBuffer.Playback(state.EntityManager);
+        ecb.Playback(state.EntityManager);
     }
 
     [BurstCompile]
