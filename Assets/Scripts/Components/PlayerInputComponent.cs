@@ -9,7 +9,12 @@ public class PlayerInputAuthoring : MonoBehaviour
     {
         public override void Bake(PlayerInputAuthoring authoring)
         {
-            AddComponent(GetEntity(TransformUsageFlags.Dynamic), new PlayerInput());
+            AddComponent(GetEntity(TransformUsageFlags.Dynamic), new PlayerInput
+            {
+                Move = float2.zero,
+                Look = float2.zero,
+                Zoom = 0f
+            });
         }
     }
 }

@@ -15,10 +15,10 @@ public partial class PlayerInputSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _moveAction = InputSystem.actions.FindAction("Move");
+        _moveAction = InputSystem.actions.FindAction("Move", true);
         _moveAction?.Enable();
 
-        _zoomAction = InputSystem.actions.FindAction("Zoom");
+        _zoomAction = InputSystem.actions.FindAction("Zoom", true);
         _zoomAction?.Enable();
     }
 
@@ -27,7 +27,7 @@ public partial class PlayerInputSystem : SystemBase
         InputSystem.Update();
         Vector2 moveValue = _moveAction.ReadValue<Vector2>();
         float zoomValue = _zoomAction.ReadValue<float>();
-        Debug.Log($"moveValue:{moveValue}, zoomValue:{zoomValue}");
+        Debug.Log($"ZoomeValue: {zoomValue}");
 
         foreach (RefRW<PlayerInput> playerInput in SystemAPI.Query<RefRW<PlayerInput>>().WithAll<GhostOwnerIsLocal>())
         {
@@ -40,36 +40,5 @@ public partial class PlayerInputSystem : SystemBase
     {
         _moveAction?.Disable();
         _zoomAction?.Disable();
-    }
-}
-
-[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
-public partial struct AddPlayerInputSystem : ISystem
-{
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        bool hasUpdated = false;
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        foreach ((RefRO<PlayerComponent> playerComponent, Entity entity) in SystemAPI.Query<RefRO<PlayerComponent>>().WithAll<GhostOwnerIsLocal>().WithEntityAccess())
-        {
-            if (!SystemAPI.HasComponent<PlayerInput>(entity)) {
-                
-                ecb.AddComponent(entity, new PlayerInput
-                {
-                    Move = float2.zero,
-                    Look = float2.zero,
-                    Zoom = 0f
-                });
-                hasUpdated = true;
-            }
-        }
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
-
-        if (hasUpdated)
-        {
-            state.Enabled = false;
-        }
     }
 }

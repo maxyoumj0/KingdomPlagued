@@ -35,7 +35,7 @@ partial struct GoInGameServerSystem : ISystem
             // Set Spawnpoint
             ecb.SetComponent(playerEntity, new LocalTransform
             {
-                Position = new float3(0, 1, 0),
+                Position = new float3(0, 10.0f, 0),
                 Rotation = SystemAPI.GetComponent<LocalTransform>(playerPrefabEntity.PlayerPrefab).Rotation,
                 Scale = SystemAPI.GetComponent<LocalTransform>(playerPrefabEntity.PlayerPrefab).Scale
             });
@@ -47,14 +47,6 @@ partial struct GoInGameServerSystem : ISystem
             // Set GhostId
             ecb.SetComponent(playerEntity, playerComponent);
             ecb.SetComponent(playerEntity, new GhostOwner { NetworkId = networkId });
-
-            // Add PlayerInput component
-            ecb.AddComponent(playerEntity, new PlayerInput
-            {
-                Move = float2.zero,
-                Look = float2.zero,
-                Zoom = 0f
-            });
 
             // Ask MapGenServerSystem to generate map on the server
             Entity genMapentity = ecb.CreateEntity();
