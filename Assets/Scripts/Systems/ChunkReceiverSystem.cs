@@ -1,6 +1,9 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.NetCode;
+using Unity.Transforms;
 using UnityEngine;
 
 [RequireMatchingQueriesForUpdate]
@@ -16,14 +19,30 @@ partial struct ChunkReceiverSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // Get tile data
+        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        {
+            Debug.Log("MapManagerComponent not found in client world yet");
+            return;
+        }
+        MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
+        if (!mapManager.TileDataBlob.IsCreated)
+        {
+            Debug.Log("TileDataBlob not created yet");
+            return;
+        }
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        ref TileBlob tileBlob = ref mapManager.TileDataBlob.Value;
+        int chunkSize = mapManager.ChunkSize;
+        int mapWidth = mapManager.MapWidth;
+        PrefabReferencesComponent prefabRefEntity = SystemAPI.GetSingleton<PrefabReferencesComponent>();
 
         // On LoadChunkRpc
-        foreach ((RefRO<LoadChunkRpc> rpc, Entity entity) in SystemAPI.Query<RefRO<LoadChunkRpc>>().WithEntityAccess())
+        foreach ((RefRO<LoadChunkRpc> rpc, Entity entity) in SystemAPI.Query<RefRO<LoadChunkRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
-            Debug.Log($"Loading chunk at {rpc.ValueRO.ChunkCoord}");
+            Debug.Log($"Loading chunk at {rpc.ValueRO.ChunkCoord}. ChunkSize:{chunkSize}. MapWidth:{mapWidth}. Seed:{mapManager.Seed}");
 
-            // Check if chunk already exists
+            // Check if this Chunk Entity already exists on client world
             bool chunkExists = false;
             foreach ((RefRO<ChunkComponent> chunk, Entity chunkEntity) in SystemAPI.Query<RefRO<ChunkComponent>>().WithEntityAccess())
             {
@@ -44,36 +63,57 @@ partial struct ChunkReceiverSystem : ISystem
                     IsLoaded = true,
                 });
 
-                // TODO: Spawn tile entities for this chunk
-            }
+                // Create entity command buffer to instantiate tiles in the new chunk
+                for (int x = 0; x < chunkSize; x++)
+                {
+                    for (int z = 0; z < chunkSize; z++)
+                    {
+                        // Calculate the index on tileBlob
+                        int tileDataIndex = (rpc.ValueRO.ChunkCoord.y * chunkSize + z) * mapWidth + (rpc.ValueRO.ChunkCoord.x * chunkSize + x);
+                        // Ensure index is valid
+                        if (tileDataIndex >= tileBlob.Tiles.Length)
+                        {
+                            Debug.LogWarning($"Skipping invalid tile index: {tileDataIndex}");
+                            continue;
+                        }
 
+                        TileData tileData = tileBlob.Tiles[tileDataIndex];
+
+                        // Instantiate the correct tile prefab
+                        Entity tilePrefab = MapManagerHelper.TileTypeToPrefab(tileData.TileType, prefabRefEntity);
+                        Entity tileEntity = ecb.Instantiate(tilePrefab);
+
+                        // Set the tile's position
+                        ecb.SetComponent(tileEntity, new LocalTransform
+                        {
+                            Position = tileData.WorldPosition,
+                            Rotation = SystemAPI.GetComponentRO<LocalTransform>(tilePrefab).ValueRO.Rotation,
+                            Scale = SystemAPI.GetComponentRO<LocalTransform>(tilePrefab).ValueRO.Scale
+                        });
+
+                        // Add a tag to identify tiles in this chunk
+                        ecb.AddComponent(tileEntity, new ChunkTileTag { ChunkCoord = rpc.ValueRO.ChunkCoord });
+                    }
+                }
+            }
             ecb.DestroyEntity(entity);
         }
 
         // On UnloadChunkRpc
-        foreach ((RefRO<UnloadChunkRpc> rpc, Entity entity) in SystemAPI.Query<RefRO<UnloadChunkRpc>>().WithEntityAccess())
+        foreach ((RefRO<UnloadChunkRpc> rpc, Entity rpcEntity) in SystemAPI.Query<RefRO<UnloadChunkRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
             Debug.Log($"Unloading chunk at {rpc.ValueRO.ChunkCoord}");
 
-            // Check if chunk was already unloaded
-            bool chunkUnloaded = true;
-            foreach ((RefRO<ChunkComponent> chunk, Entity chunkEntity) in SystemAPI.Query<RefRO<ChunkComponent>>().WithEntityAccess())
+            // Unload chunk if it's still loaded
+            foreach ((RefRO<ChunkTileTag> chunkTag, Entity chunkTagEntity) in SystemAPI.Query<RefRO<ChunkTileTag>>().WithEntityAccess())
             {
-                if (chunk.ValueRO.ChunkCoord.Equals(rpc.ValueRO.ChunkCoord))
+                if (chunkTag.ValueRO.ChunkCoord.Equals(rpc.ValueRO.ChunkCoord))
                 {
-                    chunkUnloaded = false;
-                    break;
+                    ecb.DestroyEntity(chunkTagEntity);
                 }
             }
-
-            // Unload chunk if it's still loaded
-            if (!chunkUnloaded)
-            {
-                ecb.DestroyEntity(entity);
-                // TODO: Despawn tile entities for this chunk
-            }
+            ecb.DestroyEntity(rpcEntity);
         }
-
         ecb.Playback(state.EntityManager);
     }
 

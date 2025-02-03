@@ -17,7 +17,11 @@ partial struct GoInGameClientSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+        if (!SystemAPI.TryGetSingletonEntity<PrefabReferencesComponent>(out Entity playerPrefabEntity))
+        {
+            return;
+        }
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         foreach ((RefRO<NetworkId> networkId, Entity entity) in SystemAPI.Query<RefRO<NetworkId>>().WithNone<NetworkStreamInGame>().WithEntityAccess())
         {
             ecb.AddComponent<NetworkStreamInGame>(entity);

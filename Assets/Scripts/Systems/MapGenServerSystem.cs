@@ -3,7 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
-using Unity.Rendering;
+using UnityEngine;
 
 [RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
@@ -18,13 +18,26 @@ partial struct MapGenServerSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        Entity mapManagerEntity = SystemAPI.GetSingletonEntity<MapManagerComponent>();
+        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        {
+            Debug.Log("MapManagerComponent not found in client world yet");
+            return;
+        }
         RefRO<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity);
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        // Handle GenServerMap from `MapGenServerSystem`
+        foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
+        {
+            Debug.Log("MapGenSeverSystem Received GenServerMap: GenerateWorld called");
+            GenerateWorld(ecb, mapManagerComponent);
+            ecb.DestroyEntity(entity);
+        }
 
         // Handle seed request from `MapGenClientSystem`
         foreach ((RefRO<RequestMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<RequestMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
+            Debug.Log("MapGenSeverSystem Received RequestMapManagerSettingsRpc");
             Entity sendMapSettingsRpcEntity = ecb.CreateEntity();
             ecb.AddComponent(sendMapSettingsRpcEntity, new SendMapManagerSettingsRpc
             {
@@ -33,7 +46,9 @@ partial struct MapGenServerSystem : ISystem
                 MapWidth = mapManagerComponent.ValueRO.MapWidth,
                 Seed = mapManagerComponent.ValueRO.Seed
             });
+            Debug.Log("MapGenSeverSystem Sent SendMapManagerSettingsRpc");
             ecb.AddComponent<SendRpcCommandRequest>(sendMapSettingsRpcEntity);
+            ecb.DestroyEntity(entity);
         }
         ecb.Playback(state.EntityManager);
     }
@@ -44,12 +59,8 @@ partial struct MapGenServerSystem : ISystem
         
     }
 
-    private void GenerateWorld(ref SystemState state)
+    private void GenerateWorld(EntityCommandBuffer ecb, RefRO<MapManagerComponent> mapManagerComponent)
     {
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        Entity mapManagerEntity = SystemAPI.GetSingletonEntity<MapManagerComponent>();
-        RefRO<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity);
-
         int mapWidth = mapManagerComponent.ValueRO.MapWidth;
         int mapHeight = mapManagerComponent.ValueRO.MapHeight;
         float seed = mapManagerComponent.ValueRO.Seed;
@@ -90,7 +101,6 @@ partial struct MapGenServerSystem : ISystem
             }
 
             BlobAssetReference<TileBlob> blobReference = builder.CreateBlobAssetReference<TileBlob>(Allocator.Persistent);
-            ecb.Playback(state.EntityManager);
         }
     }
 

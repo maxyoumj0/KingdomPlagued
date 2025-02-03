@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Rendering;
+using UnityEngine;
 
 [RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
@@ -18,25 +19,40 @@ partial struct MapGenClientSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        {
+            Debug.Log("MapManagerComponent not found in client world yet");
+            return;
+        }
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         // Handle client's request to generate the map on client side
         foreach ((RefRO<GenClientMap> genClientMapTag, Entity entity) in SystemAPI.Query<RefRO<GenClientMap>>().WithEntityAccess())
         {
             // Request for seed
+            Debug.Log("MapGenClientSystem Sending RequestMapManagerSettingsRpc");
             Entity requestSeedEntity = ecb.CreateEntity();
             ecb.AddComponent<RequestMapManagerSettingsRpc>(requestSeedEntity);
+            ecb.AddComponent<SendRpcCommandRequest>(requestSeedEntity);
             ecb.DestroyEntity(entity);
         }
 
         // Receive seed
-        foreach ((RefRO<SendMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<SendMapManagerSettingsRpc>>().WithEntityAccess())
+        foreach ((RefRO<SendMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<SendMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
             // Set MapManagerComponent.Seed
-            Entity mapManagerEntity = SystemAPI.GetSingletonEntity<MapManagerComponent>();
-            RefRW<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRW<MapManagerComponent>(mapManagerEntity);
-            mapManagerComponent.ValueRW.Seed = requestSeedRpc.ValueRO.Seed;
-            GenerateWorld(ref state);
-            state.EntityManager.DestroyEntity(entity);
+            Debug.Log($"MapGenClientSystem Received SendMapManagerSettingsRpc. Chunk:{requestSeedRpc.ValueRO.ChunkSize}");
+
+            ecb.SetComponent(mapManagerEntity, new MapManagerComponent
+            {
+                Seed = requestSeedRpc.ValueRO.Seed,
+                MapWidth = requestSeedRpc.ValueRO.MapWidth,
+                MapHeight = requestSeedRpc.ValueRO.MapHeight,
+                ChunkSize = requestSeedRpc.ValueRO.ChunkSize,
+                TileSize = requestSeedRpc.ValueRO.TileSize,
+                TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileDataBlob
+            });
+            GenerateWorld(ecb, requestSeedRpc.ValueRO.MapWidth, requestSeedRpc.ValueRO.MapHeight, requestSeedRpc.ValueRO.Seed, requestSeedRpc.ValueRO.TileSize, requestSeedRpc.ValueRO.ChunkSize);
+            ecb.DestroyEntity(entity);
         }
         ecb.Playback(state.EntityManager);
     }
@@ -47,16 +63,8 @@ partial struct MapGenClientSystem : ISystem
         
     }
 
-    private void GenerateWorld(ref SystemState state)
+    private void GenerateWorld(EntityCommandBuffer ecb, int mapWidth, int mapHeight, float seed, float tileSize, int chunkSize)
     {
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        Entity mapManagerEntity = SystemAPI.GetSingletonEntity<MapManagerComponent>();
-        RefRO<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity);
-
-        int mapWidth = mapManagerComponent.ValueRO.MapWidth;
-        int mapHeight = mapManagerComponent.ValueRO.MapHeight;
-        float seed = mapManagerComponent.ValueRO.Seed;
-        float tileSize = mapManagerComponent.ValueRO.TileSize;
         int totalTiles = mapWidth * mapHeight;
 
         using (BlobBuilder builder = new BlobBuilder(Allocator.Temp))
@@ -102,9 +110,9 @@ partial struct MapGenClientSystem : ISystem
                 TileSize = tileSize,
                 MapWidth = mapWidth,
                 MapHeight = mapHeight,
-                Seed = seed
+                Seed = seed,
+                ChunkSize = chunkSize
             });
-            ecb.Playback(state.EntityManager);
         }
     }
 

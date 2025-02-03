@@ -210,6 +210,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PlayerPrefab: {fileID: 7978539362100444873, guid: 92280136511e1034da6b7aa724c50786, type: 3}
+  GrassTilePrefab: {fileID: 4446939175698409228, guid: 8920c401b25bb3446b358c0bf2124b82, type: 3}
+  DirtTilePrefab: {fileID: 4732595016706296818, guid: f1e60a3e922ee9e4aa87093dcdd467b8, type: 3}
+  SandTilePrefab: {fileID: 7575487225875797511, guid: 7f0ecc455c7670a43908fb1d973641d7, type: 3}
+  WaterTilePrefab: {fileID: 7118174668888509513, guid: 6d6b1bfe094ea42409d87fd07c16cbea, type: 3}
+  StoneTilePrefab: {fileID: 8195737221910241436, guid: d091a06ea8fa59e44ae10b221a599e2f, type: 3}
 --- !u!4 &1416934875
 Transform:
   m_ObjectHideFlags: 0

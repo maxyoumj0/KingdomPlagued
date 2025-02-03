@@ -1,3 +1,4 @@
+using Unity.Entities;
 using Unity.Mathematics;
 
 public static class MapManagerHelper
@@ -26,5 +27,23 @@ public static class MapManagerHelper
         if (tileY > mapHeight) { tileY = mapHeight; }
 
         return new(tileX, tileY);
+    }
+
+    public static Entity TileTypeToPrefab(TileType tileType, PrefabReferencesComponent prefabRef)
+    {
+        switch (tileType)
+        {
+            case TileType.Grass:
+                return prefabRef.GrassTilePrefab;
+            case TileType.Dirt:
+                return prefabRef.DirtTilePrefab;
+            case TileType.Sand:
+                return prefabRef.SandTilePrefab;
+            case TileType.Stone:
+                return prefabRef.StoneTilePrefab;
+            case TileType.Water:
+                return prefabRef.WaterTilePrefab;
+        }
+        return prefabRef.GrassTilePrefab;
     }
 }

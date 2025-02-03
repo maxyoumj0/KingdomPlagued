@@ -2,7 +2,9 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Transforms;
+using UnityEngine;
 
 [RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
@@ -18,7 +20,12 @@ partial struct ChunkLoaderSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         // Get map settings
-        MapManagerComponent mapManager = SystemAPI.GetSingleton<MapManagerComponent>();
+        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        {
+            Debug.Log("MapManagerComponent not found in client world yet");
+            return;
+        }
+        MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
         int chunkSize = mapManager.ChunkSize;
         int mapWidth = mapManager.MapWidth;
         int mapHeight = mapManager.MapHeight;
@@ -36,7 +43,7 @@ partial struct ChunkLoaderSystem : ISystem
             // TODO: Add logic for loading neighoring chunks as well based on player location
         }
 
-        // Load chunks if missing
+        // Create ChunkComponent entity on server if needed
         foreach (int2 chunkCoord in activeChunks)
         {
             bool chunkExists = false;
@@ -53,25 +60,40 @@ partial struct ChunkLoaderSystem : ISystem
 
             if (!chunkExists)
             {
+                // Create Chunk Entity on the server world
                 Entity chunkEntity = ecb.CreateEntity();
                 ecb.AddComponent(chunkEntity, new ChunkComponent
                 {
                     ChunkCoord = chunkCoord,
-                    IsLoaded = true,
+                    IsLoaded = false,
                 });
 
-                // TODO: Spawn tile entities for this chunk
+                // Send `LoadChunkRpc` to client for them to load
+                Entity loadRpcEntity = ecb.CreateEntity();
+                ecb.AddComponent(loadRpcEntity, new LoadChunkRpc
+                {
+                    ChunkCoord = chunkCoord
+                });
+                ecb.AddComponent<SendRpcCommandRequest>(loadRpcEntity);
             }
         }
 
-        // Set chunks that should no longer be active
+        // Destroy chunks that should no longer be active
         foreach ((RefRW<ChunkComponent> chunk, Entity entity) in SystemAPI.Query<RefRW<ChunkComponent>>().WithEntityAccess())
         {
             if (!activeChunks.Contains(chunk.ValueRO.ChunkCoord))
             {
-                chunk.ValueRW.IsLoaded = false;
+                // Send `UnloadChunkRpc` to the client to destroy chunks that are no longer needed
+                Entity unloadRpcEntity = ecb.CreateEntity();
+                ecb.AddComponent(unloadRpcEntity, new UnloadChunkRpc
+                {
+                    ChunkCoord = chunk.ValueRO.ChunkCoord
+                });
+                ecb.AddComponent<SendRpcCommandRequest>(unloadRpcEntity);
+
+                // Destroy Chunks on server world
+                ecb.DestroyEntity(entity);
             }
-            // TODO: Despawn tile entities for this chunk
         }
 
         ecb.Playback(state.EntityManager);
