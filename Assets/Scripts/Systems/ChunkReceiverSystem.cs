@@ -66,9 +66,9 @@ partial struct ChunkReceiverSystem : ISystem
                 });
 
                 // Create entity command buffer to instantiate tiles in the new chunk
-                for (int x = 0; x < chunkSize; x++)
+                for (int y = 0; y < chunkSize; y++)
                 {
-                    for (int y = 0; y < chunkSize; y++)
+                    for (int x = 0; x < chunkSize; x++)
                     {
                         // Calculate the index on tileBlob
                         int tileDataIndex = (rpc.ValueRO.ChunkCoord.y * chunkSize + y) * mapWidth + (rpc.ValueRO.ChunkCoord.x * chunkSize + x);

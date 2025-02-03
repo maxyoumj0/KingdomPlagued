@@ -72,9 +72,9 @@ partial struct MapGenServerSystem : ISystem
             BlobBuilderArray<TileData> tileArray = builder.Allocate(ref tileBlob.Tiles, totalTiles);
 
             int i = 0;
-            for (int x = 0; x < mapWidth; x++)
+            for (int y = 0; y < mapHeight; y++)
             {
-                for (int y = 0; y < mapHeight; y++)
+                for (int x = 0; x < mapWidth; x++)
                 {
                     float noiseValue = noise.cnoise(new float2((x + seed) * 0.1f, (y + seed) * 0.1f));
                     TileType tileType = DetermineTileType(noiseValue);
