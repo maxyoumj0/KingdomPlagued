@@ -20,16 +20,13 @@ partial struct MapGenClientSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
-        {
-            Debug.Log("MapManagerComponent not found in client world yet");
             return;
-        }
+
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         // Handle client's request to generate the map on client side
         foreach ((RefRO<GenClientMap> genClientMapTag, Entity entity) in SystemAPI.Query<RefRO<GenClientMap>>().WithEntityAccess())
         {
             // Request for seed
-            Debug.Log("MapGenClientSystem Sending RequestMapManagerSettingsRpc");
             Entity requestSeedEntity = ecb.CreateEntity();
             ecb.AddComponent<RequestMapManagerSettingsRpc>(requestSeedEntity);
             ecb.AddComponent<SendRpcCommandRequest>(requestSeedEntity);
@@ -39,9 +36,7 @@ partial struct MapGenClientSystem : ISystem
         // Receive seed
         foreach ((RefRO<SendMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<SendMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
-            // Set MapManagerComponent.Seed
-            Debug.Log($"MapGenClientSystem Received SendMapManagerSettingsRpc. Chunk:{requestSeedRpc.ValueRO.ChunkSize}");
-
+            // Set MapManagerComponent
             ecb.SetComponent(mapManagerEntity, new MapManagerComponent
             {
                 Seed = requestSeedRpc.ValueRO.Seed,
@@ -52,6 +47,8 @@ partial struct MapGenClientSystem : ISystem
                 TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileDataBlob
             });
             GenerateWorld(ecb, requestSeedRpc.ValueRO.MapWidth, requestSeedRpc.ValueRO.MapHeight, requestSeedRpc.ValueRO.Seed, requestSeedRpc.ValueRO.TileSize, requestSeedRpc.ValueRO.ChunkSize);
+            Entity clientMapGenDoneEntity = ecb.CreateEntity();
+            ecb.AddComponent<ClientMapGenDone>(clientMapGenDoneEntity);
             ecb.DestroyEntity(entity);
         }
         ecb.Playback(state.EntityManager);

@@ -19,19 +19,21 @@ partial struct ChunkReceiverSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // Get tile data
+        // Ensure MapManagerComponent is all set
         if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
-        {
-            Debug.Log("MapManagerComponent not found in client world yet");
             return;
-        }
         MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
         if (!mapManager.TileDataBlob.IsCreated)
-        {
-            Debug.Log("TileDataBlob not created yet");
             return;
-        }
+
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        // Wait until map finished generating on client world
+        if (SystemAPI.TryGetSingletonEntity<ClientMapGenDone>(out Entity clientMapGenDoneEntity))
+        {
+            ecb.DestroyEntity(clientMapGenDoneEntity);
+        }
+        else return;
+
         ref TileBlob tileBlob = ref mapManager.TileDataBlob.Value;
         int chunkSize = mapManager.ChunkSize;
         int mapWidth = mapManager.MapWidth;
@@ -66,10 +68,10 @@ partial struct ChunkReceiverSystem : ISystem
                 // Create entity command buffer to instantiate tiles in the new chunk
                 for (int x = 0; x < chunkSize; x++)
                 {
-                    for (int z = 0; z < chunkSize; z++)
+                    for (int y = 0; y < chunkSize; y++)
                     {
                         // Calculate the index on tileBlob
-                        int tileDataIndex = (rpc.ValueRO.ChunkCoord.y * chunkSize + z) * mapWidth + (rpc.ValueRO.ChunkCoord.x * chunkSize + x);
+                        int tileDataIndex = (rpc.ValueRO.ChunkCoord.y * chunkSize + y) * mapWidth + (rpc.ValueRO.ChunkCoord.x * chunkSize + x);
                         // Ensure index is valid
                         if (tileDataIndex >= tileBlob.Tiles.Length)
                         {
@@ -93,6 +95,7 @@ partial struct ChunkReceiverSystem : ISystem
 
                         // Add a tag to identify tiles in this chunk
                         ecb.AddComponent(tileEntity, new ChunkTileTag { ChunkCoord = rpc.ValueRO.ChunkCoord });
+                        Debug.Log($"x: {x}, y:{y}, tileData.WorldPosition: {tileData.WorldPosition}");
                     }
                 }
             }

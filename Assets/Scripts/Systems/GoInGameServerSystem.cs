@@ -22,7 +22,6 @@ partial struct GoInGameServerSystem : ISystem
     {
         if (!SystemAPI.TryGetSingletonEntity<PrefabReferencesComponent>(out Entity prefabRefEntity))
         {
-            Debug.Log("PrefabReferencesComponent not found in server world yet");
             return;
         }
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);

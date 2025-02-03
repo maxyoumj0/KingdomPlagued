@@ -20,7 +20,6 @@ partial struct MapGenServerSystem : ISystem
     {
         if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
         {
-            Debug.Log("MapManagerComponent not found in client world yet");
             return;
         }
         RefRO<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity);
@@ -29,24 +28,24 @@ partial struct MapGenServerSystem : ISystem
         // Handle GenServerMap from `MapGenServerSystem`
         foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
         {
-            Debug.Log("MapGenSeverSystem Received GenServerMap: GenerateWorld called");
             GenerateWorld(ecb, mapManagerComponent);
+            Entity serverMapGenDoneEntity = ecb.CreateEntity();
+            ecb.AddComponent<ServerMapGenDone>(serverMapGenDoneEntity);
             ecb.DestroyEntity(entity);
         }
 
         // Handle seed request from `MapGenClientSystem`
         foreach ((RefRO<RequestMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<RequestMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
-            Debug.Log("MapGenSeverSystem Received RequestMapManagerSettingsRpc");
             Entity sendMapSettingsRpcEntity = ecb.CreateEntity();
             ecb.AddComponent(sendMapSettingsRpcEntity, new SendMapManagerSettingsRpc
             {
                 ChunkSize = mapManagerComponent.ValueRO.ChunkSize,
                 MapHeight = mapManagerComponent.ValueRO.MapHeight,
                 MapWidth = mapManagerComponent.ValueRO.MapWidth,
-                Seed = mapManagerComponent.ValueRO.Seed
+                Seed = mapManagerComponent.ValueRO.Seed,
+                TileSize = mapManagerComponent.ValueRO.TileSize
             });
-            Debug.Log("MapGenSeverSystem Sent SendMapManagerSettingsRpc");
             ecb.AddComponent<SendRpcCommandRequest>(sendMapSettingsRpcEntity);
             ecb.DestroyEntity(entity);
         }

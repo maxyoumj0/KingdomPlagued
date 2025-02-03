@@ -21,16 +21,21 @@ partial struct ChunkLoaderSystem : ISystem
     {
         // Get map settings
         if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
-        {
-            Debug.Log("MapManagerComponent not found in client world yet");
             return;
+
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        // Wait until map finished generating on server world
+        if (SystemAPI.TryGetSingletonEntity<ServerMapGenDone>(out Entity serverMapGenDoneEntity))
+        {
+            ecb.DestroyEntity(serverMapGenDoneEntity);
         }
+        else return;
+
         MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
         int chunkSize = mapManager.ChunkSize;
         int mapWidth = mapManager.MapWidth;
         int mapHeight = mapManager.MapHeight;
 
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         NativeHashSet<int2> activeChunks = new(16, Allocator.Temp);
 
         // Get all players

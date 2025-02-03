@@ -10,10 +10,8 @@ public class TileAuthoring : MonoBehaviour
         {
             Entity entity = GetEntity(TransformUsageFlags.Renderable);
             AddComponent(entity, new TileComponent {});
-            AddComponent(entity, new GhostInstance());
         }
     }
 }
 
-[GhostComponent]
 public struct TileComponent : IComponentData {}
