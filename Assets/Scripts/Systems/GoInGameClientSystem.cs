@@ -23,6 +23,8 @@ partial struct GoInGameClientSystem : ISystem
         foreach ((RefRO<NetworkId> networkId, Entity entity) in SystemAPI.Query<RefRO<NetworkId>>().WithNone<NetworkStreamInGame>().WithEntityAccess())
         {
             ecb.AddComponent<NetworkStreamInGame>(entity);
+
+            // Send `GoInGameRequestRpc` to let server know that the client has connected
             Entity rpcEntity = ecb.CreateEntity();
             ecb.AddComponent<GoInGameRequestRpc>(rpcEntity);
             ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);

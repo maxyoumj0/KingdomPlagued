@@ -3,10 +3,15 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
+using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 partial struct PlayerMovementSystem : ISystem
 {
+    // TODO: Should be received from player setting
+    private const float MoveSpeed = 5.0f;
+    private const float ZoomSpeed = 50.0f;
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
@@ -16,10 +21,14 @@ partial struct PlayerMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // TODO: Verify that the query is correct (only moves the owner's player)
+        float deltaTime = SystemAPI.Time.DeltaTime;
         foreach ((RefRO<PlayerInput> playerInput, RefRW<LocalTransform> localTransform) in SystemAPI.Query<RefRO<PlayerInput>, RefRW<LocalTransform>>().WithAll<Simulate>())
         {
-            // TODO: Write code that actually sets the localTransform
+            Vector2 moveInput = playerInput.ValueRO.Move;
+            float3 moveDirection = new float3(moveInput.x, 0, moveInput.y) * MoveSpeed * deltaTime;
+            localTransform.ValueRW.Position += moveDirection;
+            float zoomInput = playerInput.ValueRO.Zoom;
+            localTransform.ValueRW.Position += new float3(0, zoomInput, 0) * ZoomSpeed * deltaTime;
         }
     }
 

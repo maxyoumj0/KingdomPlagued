@@ -95,7 +95,6 @@ partial struct ChunkReceiverSystem : ISystem
 
                         // Add a tag to identify tiles in this chunk
                         ecb.AddComponent(tileEntity, new ChunkTileTag { ChunkCoord = rpc.ValueRO.ChunkCoord });
-                        Debug.Log($"x: {x}, y:{y}, tileData.WorldPosition: {tileData.WorldPosition}");
                     }
                 }
             }
