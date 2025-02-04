@@ -39,12 +39,15 @@ partial struct ChunkReceiverSystem : ISystem
         float tileScale = SystemAPI.GetComponentRO<LocalTransform>(MapManagerHelper.TileTypeToPrefab(TileType.Grass, prefabRefEntity)).ValueRO.Scale;
         var ecbSystem = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         EntityCommandBuffer ecbMain = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
-        EntityCommandBuffer.ParallelWriter ecbJob = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+
+        // TODO: Figure out a more elegant way to handle multiple jobs
+        NativeArray<JobHandle> jobHandles = new (100, Allocator.Temp);
+        int numJobs = 0;
 
         // On LoadChunkRpc
         foreach ((RefRO<LoadChunkRpc> rpc, Entity entity) in SystemAPI.Query<RefRO<LoadChunkRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
-            Debug.Log($"Loading chunk at {rpc.ValueRO.ChunkCoord}. ChunkSize:{chunkSize}. MapWidth:{mapWidth}. Seed:{mapManager.Seed}");
+            Debug.Log($"Loading chunk at {rpc.ValueRO.ChunkCoord}.");
 
             // Check if this Chunk Entity already exists on client world
             bool chunkExists = false;
@@ -66,7 +69,7 @@ partial struct ChunkReceiverSystem : ISystem
                     ChunkCoord = rpc.ValueRO.ChunkCoord,
                     IsLoaded = true,
                 });
-
+                EntityCommandBuffer.ParallelWriter ecbJob = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
                 // Create entity command buffer to instantiate tiles in the new chunk
                 CreateTilesJob job = new CreateTilesJob
                 {
@@ -79,8 +82,8 @@ partial struct ChunkReceiverSystem : ISystem
                     tileRotation = tileRotation,
                     tileScale = tileScale
                 };
-                JobHandle jobHandle = job.ScheduleParallel(chunkSize * chunkSize, 64, state.Dependency);
-                state.Dependency = jobHandle;
+                jobHandles[numJobs] = job.ScheduleParallel(chunkSize * chunkSize, 64, state.Dependency);
+                numJobs++;
             }
             ecbMain.DestroyEntity(entity);
         }
@@ -91,15 +94,17 @@ partial struct ChunkReceiverSystem : ISystem
             Debug.Log($"Unloading chunk at {rpc.ValueRO.ChunkCoord}");
 
             // Unload chunk if it's still loaded
-            foreach ((RefRO<ChunkTileTag> chunkTag, Entity chunkTagEntity) in SystemAPI.Query<RefRO<ChunkTileTag>>().WithEntityAccess())
+            EntityCommandBuffer.ParallelWriter ecbJob = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+            var job = new DestroyTilesJob
             {
-                if (chunkTag.ValueRO.ChunkCoord.Equals(rpc.ValueRO.ChunkCoord))
-                {
-                    ecbMain.DestroyEntity(chunkTagEntity);
-                }
-            }
+                targetChunkCoord = rpc.ValueRO.ChunkCoord,
+                ecb = ecbJob
+            };
+            jobHandles[numJobs] = job.ScheduleParallel(state.Dependency);
             ecbMain.DestroyEntity(rpcEntity);
         }
+        state.Dependency = JobHandle.CombineDependencies(jobHandles);
+        jobHandles.Dispose();
     }
 
     [BurstCompile]
@@ -155,6 +160,20 @@ partial struct ChunkReceiverSystem : ISystem
 
             // Add a tag to identify tiles in this chunk
             ecb.AddComponent(index, tileEntity, new ChunkTileTag { ChunkCoord = chunkCoord });
+        }
+    }
+
+    public partial struct DestroyTilesJob : IJobEntity
+    {
+        public int2 targetChunkCoord;
+        public EntityCommandBuffer.ParallelWriter ecb;
+
+        public void Execute(Entity entity, [ChunkIndexInQuery] int sortKey, in ChunkTileTag chunkTag)
+        {
+            if (chunkTag.ChunkCoord.Equals(targetChunkCoord))
+            {
+                ecb.DestroyEntity(sortKey, entity);
+            }
         }
     }
 }

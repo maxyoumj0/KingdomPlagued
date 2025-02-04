@@ -85,7 +85,7 @@ partial struct ChunkLoaderSystem : ISystem
                     ChunkCoord = chunkCoord
                 });
                 ecb.AddComponent<SendRpcCommandRequest>(loadRpcEntity);
-                Debug.Log($"LoadChunkRpc sent to client world");
+                Debug.Log($"LoadChunkRpc sent");
             }
         }
 

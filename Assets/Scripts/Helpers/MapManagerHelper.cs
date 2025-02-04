@@ -20,6 +20,7 @@ public static class MapManagerHelper
         int tileX = (int)math.floor(worldCoord.x / tileSize);
         int tileY = (int)math.floor(worldCoord.y / tileSize);
 
+        // TODO: Use clamp instead
         if (tileX < 0) { tileX = 0; }
         if (tileX > mapWidth) { tileX = mapWidth; }
         if (tileY < 0) { tileY = 0; }
