@@ -633,7 +633,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5140533903815483800}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa40e2c964f4fec45b1fd20b8efb9865, type: 3}
+  m_Script: {fileID: 11500000, guid: 5fb7791a0897a2347ab47d1292de4870, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &5639491961188697380
@@ -1010,7 +1010,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 3111179169128257522}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 7534154490178013183}
+        m_TargetAssemblyTypeName: MainMenuPanel, Assembly-CSharp
+        m_MethodName: JoinMultiplayerClient
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &8182193810560231343
 GameObject:
   m_ObjectHideFlags: 0

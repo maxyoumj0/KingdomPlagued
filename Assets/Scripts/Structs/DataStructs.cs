@@ -1,12 +1,6 @@
 using System.Collections.Generic;using UnityEngine;
-
-[System.Serializable]
-public struct TileData
-{
-    public Vector3 WorldPosition; // World-space position
-    public TileType TileType; // Type of tile
-    public BiomeType Biome; // Associated biome
-}
+using Unity.Entities;
+using Unity.Mathematics;
 
 public struct BuildingData
 {
@@ -24,8 +18,5 @@ public struct PawnData
     public float Health;     // Pawn health
     public Vector3 Destination; // Destination for movement
 }
-
-public enum TileType { Grass, Water, Sand, Dirt, Stone }
-public enum BiomeType { Plains, Desert, Ocean, Forest }
 
 public enum BuildingEnum { TestBuilding }
