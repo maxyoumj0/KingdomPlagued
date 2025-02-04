@@ -9,7 +9,7 @@ using UnityEngine;
 partial struct PlayerMovementSystem : ISystem
 {
     // TODO: Should be received from player setting
-    private const float MoveSpeed = 10.0f;
+    private const float MoveSpeed = 20.0f;
     private const float ZoomSpeed = 50.0f;
 
     [BurstCompile]

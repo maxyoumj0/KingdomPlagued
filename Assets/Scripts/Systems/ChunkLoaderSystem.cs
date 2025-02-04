@@ -25,11 +25,8 @@ partial struct ChunkLoaderSystem : ISystem
 
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         // Wait until map finished generating on server world
-        if (SystemAPI.TryGetSingletonEntity<ServerMapGenDone>(out Entity serverMapGenDoneEntity))
-        {
-            ecb.DestroyEntity(serverMapGenDoneEntity);
-        }
-        else return;
+        if (!SystemAPI.TryGetSingletonEntity<ServerMapGenDone>(out Entity serverMapGenDoneEntity))
+            return;
 
         MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
         int chunkSize = mapManager.ChunkSize;
@@ -41,6 +38,13 @@ partial struct ChunkLoaderSystem : ISystem
         // Get all players
         foreach ((RefRO<LocalTransform> localTransformComponent, Entity entity) in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<PlayerComponent>().WithEntityAccess())
         {
+            // Skip on server's player entity
+            if (SystemAPI.GetComponent<GhostOwner>(entity).NetworkId == 0)
+            {
+                continue;
+            }
+
+            // Calculate which chunk the player is on top of
             int2 playerChunkCoord = MapManagerHelper.WorldToChunkCoord(new float2(
                 localTransformComponent.ValueRO.Position.x, localTransformComponent.ValueRO.Position.z), chunkSize, mapWidth, mapHeight);
             activeChunks.Add(playerChunkCoord);
@@ -65,7 +69,7 @@ partial struct ChunkLoaderSystem : ISystem
 
             if (!chunkExists)
             {
-                // Create Chunk Entity on the server world
+                // Create Chunk Entity on the server 
                 Entity chunkEntity = ecb.CreateEntity();
                 ecb.AddComponent(chunkEntity, new ChunkComponent
                 {
@@ -80,6 +84,7 @@ partial struct ChunkLoaderSystem : ISystem
                     ChunkCoord = chunkCoord
                 });
                 ecb.AddComponent<SendRpcCommandRequest>(loadRpcEntity);
+                Debug.Log($"LoadChunkRpc sent to client world");
             }
         }
 
