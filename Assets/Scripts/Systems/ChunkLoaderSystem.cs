@@ -29,6 +29,7 @@ partial struct ChunkLoaderSystem : ISystem
             return;
 
         MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
+        float tileSize = mapManager.TileSize;
         int chunkSize = mapManager.ChunkSize;
         int mapWidth = mapManager.MapWidth;
         int mapHeight = mapManager.MapHeight;
@@ -46,7 +47,7 @@ partial struct ChunkLoaderSystem : ISystem
 
             // Calculate which chunk the player is on top of
             int2 playerChunkCoord = MapManagerHelper.WorldToChunkCoord(new float2(
-                localTransformComponent.ValueRO.Position.x, localTransformComponent.ValueRO.Position.z), chunkSize, mapWidth, mapHeight);
+                localTransformComponent.ValueRO.Position.x, localTransformComponent.ValueRO.Position.z), tileSize, chunkSize, mapWidth, mapHeight);
             activeChunks.Add(playerChunkCoord);
 
             // TODO: Add logic for loading neighoring chunks as well based on player location

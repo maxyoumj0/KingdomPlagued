@@ -3,15 +3,14 @@ using Unity.Mathematics;
 
 public static class MapManagerHelper
 {
-    public static int2 WorldToChunkCoord(float2 worldCoord, int chunkSize, int mapWidth, int mapHeight)
+    public static int2 WorldToChunkCoord(float2 worldCoord, float tileSize, int chunkSize, int mapWidth, int mapHeight)
     {
-        int chunkX = (int)math.floor(worldCoord.x / chunkSize);
-        int chunkY = (int)math.floor(worldCoord.y / chunkSize);
+        int chunkX = (int)math.floor(worldCoord.x / (tileSize * chunkSize));
+        int chunkY = (int)math.floor(worldCoord.y / (tileSize / 2 * chunkSize));
 
-        if (chunkX < 0) { chunkX = 0; }
-        if (chunkX > (float)mapWidth / chunkSize) { chunkX = mapWidth; }
-        if (chunkY < 0) { chunkY = 0; }
-        if (chunkY > (float)mapHeight / chunkSize) { chunkY = mapHeight; }
+        // Clamp within valid chunk bounds
+        chunkX = (int)math.clamp(chunkX, 0, (mapWidth / (tileSize * chunkSize)) - 1);
+        chunkY = (int)math.clamp(chunkY, 0, (mapHeight / (tileSize / 2 * chunkSize) - 1));
 
         return new(chunkX, chunkY);
     }
