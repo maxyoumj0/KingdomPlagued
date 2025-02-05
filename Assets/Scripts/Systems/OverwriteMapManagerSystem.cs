@@ -1,7 +1,6 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Collections;
-using UnityEngine;
 
 [UpdateInGroup(typeof(InitializationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
@@ -16,7 +15,6 @@ partial struct OverwriteMapManagerSystem : ISystem
         if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
             return;
 
-        Debug.Log("Received PendingMapManagerSettingsComponent in OverwriteMapManagerSettingsComponent");
         PendingMapManagerSettingsComponent pendingSettings = SystemAPI.GetComponent<PendingMapManagerSettingsComponent>(pendingMapManagerSettingsEntity);
 
         // Overwrite MapManager settings based on host's preference
@@ -30,6 +28,8 @@ partial struct OverwriteMapManagerSystem : ISystem
             TileSize = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileSize,
             TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileDataBlob
         });
+        Entity genMapentity = ecb.CreateEntity();
+        ecb.AddComponent<GenServerMap>(genMapentity);
         ecb.Playback(state.EntityManager);
         state.Enabled = false;
     }
