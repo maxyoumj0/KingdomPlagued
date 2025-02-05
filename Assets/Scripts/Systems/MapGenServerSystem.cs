@@ -25,7 +25,7 @@ partial struct MapGenServerSystem : ISystem
         RefRO<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity);
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        // Handle GenServerMap from `MapGenServerSystem`
+        // Handle GenServerMap from `GoInGameServer`
         foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
         {
             GenerateWorld(ecb, mapManagerComponent);

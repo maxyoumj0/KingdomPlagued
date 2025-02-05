@@ -48,10 +48,6 @@ partial struct GoInGameServerSystem : ISystem
             ecb.SetComponent(playerEntity, playerComponent);
             ecb.SetComponent(playerEntity, new GhostOwner { NetworkId = networkId });
 
-            // Ask MapGenServerSystem to generate map on the server
-            Entity genMapentity = ecb.CreateEntity();
-            ecb.AddComponent<GenServerMap>(genMapentity);
-
             ecb.DestroyEntity(RpcEntity);
         }
         ecb.Playback(state.EntityManager);

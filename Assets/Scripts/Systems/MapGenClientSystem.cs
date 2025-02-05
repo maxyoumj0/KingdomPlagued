@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
-using Unity.Rendering;
 using UnityEngine;
 
 [RequireMatchingQueriesForUpdate]
@@ -36,6 +35,20 @@ partial struct MapGenClientSystem : ISystem
         // Receive seed
         foreach ((RefRO<SendMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<SendMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
+            // Make sure that the `SendMapManagerSettingsRpc` is for this local client
+            bool isFromLocalClient = false;
+            foreach (var (ghostOwnerIsLocal, ghostOwner) in SystemAPI.Query<RefRO<GhostOwnerIsLocal>, RefRO<GhostOwner>>())
+            {
+                if (ghostOwner.ValueRO.NetworkId != 0)
+                {
+                    isFromLocalClient = true;
+                }
+            }
+            if (isFromLocalClient)
+            {
+                break;
+            }
+
             // Set MapManagerComponent
             ecb.SetComponent(mapManagerEntity, new MapManagerComponent
             {
@@ -46,6 +59,7 @@ partial struct MapGenClientSystem : ISystem
                 TileSize = requestSeedRpc.ValueRO.TileSize,
                 TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileDataBlob
             });
+            Debug.Log("Generating Client Map!");
             GenerateWorld(ecb, requestSeedRpc.ValueRO.MapWidth, requestSeedRpc.ValueRO.MapHeight, requestSeedRpc.ValueRO.Seed, requestSeedRpc.ValueRO.TileSize, requestSeedRpc.ValueRO.ChunkSize);
             Entity clientMapGenDoneEntity = ecb.CreateEntity();
             ecb.AddComponent<ClientMapGenDone>(clientMapGenDoneEntity);
