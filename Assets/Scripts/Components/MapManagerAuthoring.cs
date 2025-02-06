@@ -1,5 +1,6 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Rendering;
 using UnityEngine;
 
@@ -25,18 +26,20 @@ public class MapManagerAuthoring : MonoBehaviour
                 MapHeight = authoring.MapHeight,
                 Seed = authoring.Seed,
             });
+            AddComponent(entity, new GhostInstance());
         }
     }
 }
 
+[GhostComponent]
 public struct MapManagerComponent : IComponentData
 {
     public BlobAssetReference<TileBlob> TileDataBlob;  // Static Map Data
-    public int ChunkSize;
-    public float TileSize;
-    public int MapWidth;
-    public int MapHeight;
-    public float Seed;
+    [GhostField] public int ChunkSize;
+    [GhostField] public float TileSize;
+    [GhostField] public int MapWidth;
+    [GhostField] public int MapHeight;
+    [GhostField] public float Seed;
 }
 
 public struct TileBlob

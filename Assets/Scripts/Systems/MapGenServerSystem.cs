@@ -1,55 +1,48 @@
+using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Transforms;
 using UnityEngine;
 
-[RequireMatchingQueriesForUpdate]
+//[RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct MapGenServerSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        
+
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        foreach ((RefRO<LocalTransform> localTransformComponent, Entity entity) in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<PlayerComponent>().WithEntityAccess())
         {
-            return;
-        }
-        RefRO<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity);
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-
-        // Handle GenServerMap from `MapGenServerSystem`
-        foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
-        {
-            GenerateWorld(ecb, mapManagerComponent);
-            Entity serverMapGenDoneEntity = ecb.CreateEntity();
-            ecb.AddComponent<ServerMapGenDone>(serverMapGenDoneEntity);
-            ecb.DestroyEntity(entity);
+            Debug.Log("TEST");
         }
 
-        // Handle seed request from `MapGenClientSystem`
-        foreach ((RefRO<RequestMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<RequestMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
-        {
-            Entity sendMapSettingsRpcEntity = ecb.CreateEntity();
-            ecb.AddComponent(sendMapSettingsRpcEntity, new SendMapManagerSettingsRpc
-            {
-                ChunkSize = mapManagerComponent.ValueRO.ChunkSize,
-                MapHeight = mapManagerComponent.ValueRO.MapHeight,
-                MapWidth = mapManagerComponent.ValueRO.MapWidth,
-                Seed = mapManagerComponent.ValueRO.Seed,
-                TileSize = mapManagerComponent.ValueRO.TileSize
-            });
-            ecb.AddComponent<SendRpcCommandRequest>(sendMapSettingsRpcEntity);
-            ecb.DestroyEntity(entity);
-        }
-        ecb.Playback(state.EntityManager);
+        //EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        //// Handle GenServerMap from `MapGenServerSystem`
+        //foreach (var (mapManager, entity) in SystemAPI.Query<RefRO<MapManagerComponent>>().WithEntityAccess())
+        //{
+        //    Debug.Log($"Server Found MapManagerComponent on Entity {entity.Index}");
+        //}
+
+        //foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
+        //{
+        //    foreach ((RefRO<MapManagerComponent>  mapManager, Entity managerEntity) in SystemAPI.Query<RefRO<MapManagerComponent>>().WithEntityAccess())
+        //    {
+        //        Debug.Log("Generating server map");
+        //        GenerateWorld(ecb, mapManager.ValueRO);
+        //        ecb.DestroyEntity(entity);
+        //    }
+        //}
+
+        //ecb.Playback(state.EntityManager);
     }
 
     [BurstCompile]
@@ -58,12 +51,12 @@ partial struct MapGenServerSystem : ISystem
         
     }
 
-    private void GenerateWorld(EntityCommandBuffer ecb, RefRO<MapManagerComponent> mapManagerComponent)
+    private void GenerateWorld(EntityCommandBuffer ecb, MapManagerComponent mapManagerComponent)
     {
-        int mapWidth = mapManagerComponent.ValueRO.MapWidth;
-        int mapHeight = mapManagerComponent.ValueRO.MapHeight;
-        float seed = mapManagerComponent.ValueRO.Seed;
-        float tileSize = mapManagerComponent.ValueRO.TileSize;
+        int mapWidth = mapManagerComponent.MapWidth;
+        int mapHeight = mapManagerComponent.MapHeight;
+        float seed = mapManagerComponent.Seed;
+        float tileSize = mapManagerComponent.TileSize;
         int totalTiles = mapWidth * mapHeight;
 
         using (BlobBuilder builder = new BlobBuilder(Allocator.Temp))

@@ -23,5 +23,5 @@ public class PlayerAuthoring : MonoBehaviour
 [GhostComponent]
 public struct PlayerComponent : IComponentData
 {
-    public int OwnerNetworkId;
+    [GhostField] public int OwnerNetworkId;
 }

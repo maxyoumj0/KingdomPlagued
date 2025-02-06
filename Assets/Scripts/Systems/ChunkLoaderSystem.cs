@@ -23,12 +23,13 @@ partial struct ChunkLoaderSystem : ISystem
         if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
             return;
 
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        // Wait until map finished generating on server world
-        if (!SystemAPI.TryGetSingletonEntity<ServerMapGenDone>(out Entity serverMapGenDoneEntity))
+        MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
+
+        // Ensure that TileDataBlob is generated on the server
+        if (!mapManager.TileDataBlob.IsCreated)
             return;
 
-        MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         float tileSize = mapManager.TileSize;
         int chunkSize = mapManager.ChunkSize;
         int mapWidth = mapManager.MapWidth;
@@ -106,7 +107,6 @@ partial struct ChunkLoaderSystem : ISystem
                 ecb.DestroyEntity(entity);
             }
         }
-
         ecb.Playback(state.EntityManager);
     }
 

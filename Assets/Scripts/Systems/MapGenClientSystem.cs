@@ -13,43 +13,20 @@ partial struct MapGenClientSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        
+
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
-            return;
-
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        // Handle client's request to generate the map on client side
-        foreach ((RefRO<GenClientMap> genClientMapTag, Entity entity) in SystemAPI.Query<RefRO<GenClientMap>>().WithEntityAccess())
+        foreach (RefRO<MapManagerComponent> mapManager in SystemAPI.Query<RefRO<MapManagerComponent>>())
         {
-            // Request for seed
-            Entity requestSeedEntity = ecb.CreateEntity();
-            ecb.AddComponent<RequestMapManagerSettingsRpc>(requestSeedEntity);
-            ecb.AddComponent<SendRpcCommandRequest>(requestSeedEntity);
-            ecb.DestroyEntity(entity);
-        }
-
-        // Receive seed
-        foreach ((RefRO<SendMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<SendMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
-        {
-            // Set MapManagerComponent
-            ecb.SetComponent(mapManagerEntity, new MapManagerComponent
-            {
-                Seed = requestSeedRpc.ValueRO.Seed,
-                MapWidth = requestSeedRpc.ValueRO.MapWidth,
-                MapHeight = requestSeedRpc.ValueRO.MapHeight,
-                ChunkSize = requestSeedRpc.ValueRO.ChunkSize,
-                TileSize = requestSeedRpc.ValueRO.TileSize,
-                TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileDataBlob
-            });
-            GenerateWorld(ecb, requestSeedRpc.ValueRO.MapWidth, requestSeedRpc.ValueRO.MapHeight, requestSeedRpc.ValueRO.Seed, requestSeedRpc.ValueRO.TileSize, requestSeedRpc.ValueRO.ChunkSize);
-            Entity clientMapGenDoneEntity = ecb.CreateEntity();
-            ecb.AddComponent<ClientMapGenDone>(clientMapGenDoneEntity);
-            ecb.DestroyEntity(entity);
+            // Ensure that TileDataBlob is generated on the server
+            if (!mapManager.ValueRO.TileDataBlob.IsCreated)
+                break;
+            Debug.Log("GenerateWorld Client System");
+            GenerateWorld(ecb, mapManager.ValueRO.MapWidth, mapManager.ValueRO.MapHeight, mapManager.ValueRO.Seed, mapManager.ValueRO.TileSize, mapManager.ValueRO.ChunkSize);
         }
         ecb.Playback(state.EntityManager);
     }
@@ -104,11 +81,11 @@ partial struct MapGenClientSystem : ISystem
             ecb.SetComponent(mapEntity, new MapManagerComponent
             {
                 TileDataBlob = blobReference,
+                ChunkSize = chunkSize,
                 TileSize = tileSize,
                 MapWidth = mapWidth,
                 MapHeight = mapHeight,
-                Seed = seed,
-                ChunkSize = chunkSize
+                Seed = seed
             });
         }
     }

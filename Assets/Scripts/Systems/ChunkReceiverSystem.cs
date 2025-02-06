@@ -28,10 +28,6 @@ partial struct ChunkReceiverSystem : ISystem
         if (!mapManager.TileDataBlob.IsCreated)
             return;
 
-        // Wait until map finished generating on client world
-        if (!SystemAPI.TryGetSingletonEntity<ClientMapGenDone>(out Entity clientMapGenDoneEntity))
-            return;
-
         int chunkSize = mapManager.ChunkSize;
         int mapWidth = mapManager.MapWidth;
         PrefabReferencesComponent prefabRefEntity = SystemAPI.GetSingleton<PrefabReferencesComponent>();

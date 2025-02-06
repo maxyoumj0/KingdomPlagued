@@ -13,7 +13,9 @@ partial struct OverwriteMapManagerSystem : ISystem
         // Ensure system only runs if MapManagerComponent and PendingMapManagerSettingsComponent exist
         if (!SystemAPI.TryGetSingletonEntity<PendingMapManagerSettingsComponent>(out Entity pendingMapManagerSettingsEntity))
             return;
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        if (!SystemAPI.TryGetSingletonEntity<PrefabReferencesComponent>(out Entity prefabRefEntity))
+            return;
+        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntityDD))
             return;
 
         Debug.Log("Received PendingMapManagerSettingsComponent in OverwriteMapManagerSettingsComponent");
@@ -21,15 +23,20 @@ partial struct OverwriteMapManagerSystem : ISystem
 
         // Overwrite MapManager settings based on host's preference
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        PrefabReferencesComponent prefabRefComponent = SystemAPI.GetComponent<PrefabReferencesComponent>(prefabRefEntity);
+        Entity mapManagerEntity = ecb.Instantiate(prefabRefComponent.MapManagerPrefab);
+        var TileSize = SystemAPI.GetComponentRO<MapManagerComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize;
+
         ecb.SetComponent(mapManagerEntity, new MapManagerComponent
         {
             Seed = pendingSettings.Seed,
             MapWidth = pendingSettings.MapWidth,
             MapHeight = pendingSettings.MapHeight,
             ChunkSize = pendingSettings.ChunkSize,
-            TileSize = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileSize,
-            TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileDataBlob
+            TileSize = SystemAPI.GetComponentRO<MapManagerComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize,
+            TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileDataBlob
         });
+        Debug.Log("Instantiated MapManager");
         ecb.Playback(state.EntityManager);
         state.Enabled = false;
     }

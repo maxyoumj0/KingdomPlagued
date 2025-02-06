@@ -21,9 +21,8 @@ partial struct GoInGameServerSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingletonEntity<PrefabReferencesComponent>(out Entity prefabRefEntity))
-        {
             return;
-        }
+
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         foreach ((RefRO<ReceiveRpcCommandRequest> receiveRpcCommandRequest, Entity RpcEntity) in SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>>().WithAll<GoInGameRequestRpc>().WithEntityAccess())
         {
@@ -50,6 +49,7 @@ partial struct GoInGameServerSystem : ISystem
 
             // Ask MapGenServerSystem to generate map on the server
             Entity genMapentity = ecb.CreateEntity();
+            Debug.Log("GenServerMap added");
             ecb.AddComponent<GenServerMap>(genMapentity);
 
             ecb.DestroyEntity(RpcEntity);
