@@ -31,7 +31,6 @@ partial struct OverwriteMapManagerSystem : ISystem
             ChunkSize = pendingSettings.ChunkSize,
             TileSize = SystemAPI.GetComponentRO<MapSettingsComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize,
         });
-        Debug.Log("Instantiated MapManager");
         ecb.Playback(state.EntityManager);
         state.Enabled = false;
     }
