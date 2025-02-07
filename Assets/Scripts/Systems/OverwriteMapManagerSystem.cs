@@ -12,24 +12,25 @@ partial struct OverwriteMapManagerSystem : ISystem
         // Ensure system only runs if MapManagerComponent and PendingMapManagerSettingsComponent exist
         if (!SystemAPI.TryGetSingletonEntity<PendingMapManagerSettingsComponent>(out Entity pendingMapManagerSettingsEntity))
             return;
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        if (!SystemAPI.TryGetSingletonEntity<PrefabReferencesComponent>(out Entity prefabRefEntity))
             return;
 
         PendingMapManagerSettingsComponent pendingSettings = SystemAPI.GetComponent<PendingMapManagerSettingsComponent>(pendingMapManagerSettingsEntity);
 
         // Overwrite MapManager settings based on host's preference
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        ecb.SetComponent(mapManagerEntity, new MapManagerComponent
+        PrefabReferencesComponent prefabRefComponent = SystemAPI.GetComponent<PrefabReferencesComponent>(prefabRefEntity);
+        Entity mapManagerEntity = ecb.Instantiate(prefabRefComponent.MapManagerPrefab);
+        var TileSize = SystemAPI.GetComponentRO<MapSettingsComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize;
+
+        ecb.SetComponent(mapManagerEntity, new MapSettingsComponent
         {
             Seed = pendingSettings.Seed,
             MapWidth = pendingSettings.MapWidth,
             MapHeight = pendingSettings.MapHeight,
             ChunkSize = pendingSettings.ChunkSize,
-            TileSize = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileSize,
-            TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileDataBlob
+            TileSize = SystemAPI.GetComponentRO<MapSettingsComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize,
         });
-        Entity genMapentity = ecb.CreateEntity();
-        ecb.AddComponent<GenServerMap>(genMapentity);
         ecb.Playback(state.EntityManager);
         state.Enabled = false;
     }

@@ -21,9 +21,8 @@ partial struct GoInGameServerSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingletonEntity<PrefabReferencesComponent>(out Entity prefabRefEntity))
-        {
             return;
-        }
+
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         foreach ((RefRO<ReceiveRpcCommandRequest> receiveRpcCommandRequest, Entity RpcEntity) in SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>>().WithAll<GoInGameRequestRpc>().WithEntityAccess())
         {

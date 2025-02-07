@@ -12,58 +12,20 @@ partial struct MapGenClientSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        
+
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        if (SystemAPI.TryGetSingleton<MapDataComponent>(out MapDataComponent mapData))
             return;
 
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        // Handle client's request to generate the map on client side
-        foreach ((RefRO<GenClientMap> genClientMapTag, Entity entity) in SystemAPI.Query<RefRO<GenClientMap>>().WithEntityAccess())
+        foreach (RefRO<MapSettingsComponent> mapManager in SystemAPI.Query<RefRO<MapSettingsComponent>>())
         {
-            // Request for seed
-            Entity requestSeedEntity = ecb.CreateEntity();
-            ecb.AddComponent<RequestMapManagerSettingsRpc>(requestSeedEntity);
-            ecb.AddComponent<SendRpcCommandRequest>(requestSeedEntity);
-            ecb.DestroyEntity(entity);
-        }
-
-        // Receive seed
-        foreach ((RefRO<SendMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<SendMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
-        {
-            // Make sure that the `SendMapManagerSettingsRpc` is for this local client
-            bool isFromLocalClient = false;
-            foreach (var (ghostOwnerIsLocal, ghostOwner) in SystemAPI.Query<RefRO<GhostOwnerIsLocal>, RefRO<GhostOwner>>())
-            {
-                if (ghostOwner.ValueRO.NetworkId != 0)
-                {
-                    isFromLocalClient = true;
-                }
-            }
-            if (isFromLocalClient)
-            {
-                break;
-            }
-
-            // Set MapManagerComponent
-            ecb.SetComponent(mapManagerEntity, new MapManagerComponent
-            {
-                Seed = requestSeedRpc.ValueRO.Seed,
-                MapWidth = requestSeedRpc.ValueRO.MapWidth,
-                MapHeight = requestSeedRpc.ValueRO.MapHeight,
-                ChunkSize = requestSeedRpc.ValueRO.ChunkSize,
-                TileSize = requestSeedRpc.ValueRO.TileSize,
-                TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity).ValueRO.TileDataBlob
-            });
-            Debug.Log("Generating Client Map!");
-            GenerateWorld(ecb, requestSeedRpc.ValueRO.MapWidth, requestSeedRpc.ValueRO.MapHeight, requestSeedRpc.ValueRO.Seed, requestSeedRpc.ValueRO.TileSize, requestSeedRpc.ValueRO.ChunkSize);
-            Entity clientMapGenDoneEntity = ecb.CreateEntity();
-            ecb.AddComponent<ClientMapGenDone>(clientMapGenDoneEntity);
-            ecb.DestroyEntity(entity);
+            Debug.Log("GenerateWorld Client System");
+            GenerateWorld(ecb, mapManager.ValueRO.MapWidth, mapManager.ValueRO.MapHeight, mapManager.ValueRO.Seed, mapManager.ValueRO.TileSize, mapManager.ValueRO.ChunkSize);
         }
         ecb.Playback(state.EntityManager);
     }
@@ -114,15 +76,10 @@ partial struct MapGenClientSystem : ISystem
             BlobAssetReference<TileBlob> blobReference = builder.CreateBlobAssetReference<TileBlob>(Allocator.Persistent);
 
             // Create MapManager Singleton Entity
-            Entity mapEntity = SystemAPI.GetSingletonEntity<MapManagerComponent>();
-            ecb.SetComponent(mapEntity, new MapManagerComponent
+            Entity mapEntity = ecb.CreateEntity();
+            ecb.AddComponent(mapEntity, new MapDataComponent
             {
-                TileDataBlob = blobReference,
-                TileSize = tileSize,
-                MapWidth = mapWidth,
-                MapHeight = mapHeight,
-                Seed = seed,
-                ChunkSize = chunkSize
+                TileDataBlob = blobReference
             });
         }
     }

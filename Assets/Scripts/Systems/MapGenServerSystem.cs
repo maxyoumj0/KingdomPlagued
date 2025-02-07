@@ -1,53 +1,38 @@
+using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Transforms;
 using UnityEngine;
 
-[RequireMatchingQueriesForUpdate]
+//[RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct MapGenServerSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        
+
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
-        {
+        if (SystemAPI.TryGetSingleton<MapDataComponent>(out MapDataComponent mapData))
             return;
-        }
-        RefRO<MapManagerComponent> mapManagerComponent = SystemAPI.GetComponentRO<MapManagerComponent>(mapManagerEntity);
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        // Handle GenServerMap from `GoInGameServer`
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        // Handle GenServerMap from `MapGenServerSystem`
         foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
         {
-            GenerateWorld(ecb, mapManagerComponent);
-            Entity serverMapGenDoneEntity = ecb.CreateEntity();
-            ecb.AddComponent<ServerMapGenDone>(serverMapGenDoneEntity);
-            ecb.DestroyEntity(entity);
-        }
-
-        // Handle seed request from `MapGenClientSystem`
-        foreach ((RefRO<RequestMapManagerSettingsRpc> requestSeedRpc, Entity entity) in SystemAPI.Query<RefRO<RequestMapManagerSettingsRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
-        {
-            Entity sendMapSettingsRpcEntity = ecb.CreateEntity();
-            ecb.AddComponent(sendMapSettingsRpcEntity, new SendMapManagerSettingsRpc
+            foreach ((RefRO<MapSettingsComponent> mapManager, Entity managerEntity) in SystemAPI.Query<RefRO<MapSettingsComponent>>().WithEntityAccess())
             {
-                ChunkSize = mapManagerComponent.ValueRO.ChunkSize,
-                MapHeight = mapManagerComponent.ValueRO.MapHeight,
-                MapWidth = mapManagerComponent.ValueRO.MapWidth,
-                Seed = mapManagerComponent.ValueRO.Seed,
-                TileSize = mapManagerComponent.ValueRO.TileSize
-            });
-            ecb.AddComponent<SendRpcCommandRequest>(sendMapSettingsRpcEntity);
-            ecb.DestroyEntity(entity);
+                Debug.Log("Generating server map");
+                GenerateWorld(ecb, mapManager.ValueRO);
+                ecb.DestroyEntity(entity);
+            }
         }
         ecb.Playback(state.EntityManager);
     }
@@ -58,12 +43,13 @@ partial struct MapGenServerSystem : ISystem
         
     }
 
-    private void GenerateWorld(EntityCommandBuffer ecb, RefRO<MapManagerComponent> mapManagerComponent)
+    // TODO: Turn this into a job
+    private void GenerateWorld(EntityCommandBuffer ecb, MapSettingsComponent mapSettingsComponent)
     {
-        int mapWidth = mapManagerComponent.ValueRO.MapWidth;
-        int mapHeight = mapManagerComponent.ValueRO.MapHeight;
-        float seed = mapManagerComponent.ValueRO.Seed;
-        float tileSize = mapManagerComponent.ValueRO.TileSize;
+        int mapWidth = mapSettingsComponent.MapWidth;
+        int mapHeight = mapSettingsComponent.MapHeight;
+        float seed = mapSettingsComponent.Seed;
+        float tileSize = mapSettingsComponent.TileSize;
         int totalTiles = mapWidth * mapHeight;
 
         using (BlobBuilder builder = new BlobBuilder(Allocator.Temp))
@@ -98,8 +84,12 @@ partial struct MapGenServerSystem : ISystem
                     i++;
                 }
             }
-
             BlobAssetReference<TileBlob> blobReference = builder.CreateBlobAssetReference<TileBlob>(Allocator.Persistent);
+            Entity mapDataEntity = ecb.CreateEntity();
+            ecb.AddComponent(mapDataEntity, new MapDataComponent
+            {
+                TileDataBlob = blobReference,
+            });
         }
     }
 

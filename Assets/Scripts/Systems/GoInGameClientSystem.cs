@@ -2,6 +2,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
+using UnityEngine;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
 partial struct GoInGameClientSystem : ISystem
@@ -26,13 +27,9 @@ partial struct GoInGameClientSystem : ISystem
 
             // Send `GoInGameRequestRpc` to let server know that the client has connected
             Entity rpcEntity = ecb.CreateEntity();
+            Debug.Log("Sending GoInGameRequestRpc from ClientSystem");
             ecb.AddComponent<GoInGameRequestRpc>(rpcEntity);
             ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
-            if (networkId.ValueRO.Value != 0)
-            {
-                Entity clientWorldGenEntity = ecb.CreateEntity();
-                ecb.AddComponent<GenClientMap>(clientWorldGenEntity);
-            }
         }
         ecb.Playback(state.EntityManager);
     }

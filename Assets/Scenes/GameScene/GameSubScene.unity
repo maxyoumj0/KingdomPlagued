@@ -119,67 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1001 &1181577527
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -0.26393372
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 5.4031963
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -2.2472916
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 28365896054253725, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5665300746312683581, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: ChunkSize
-      value: 32
-      objectReference: {fileID: 0}
-    - target: {fileID: 8182249798987309548, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
-      propertyPath: m_Name
-      value: P_MapManager
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
 --- !u!1 &1416934873
 GameObject:
   m_ObjectHideFlags: 0
@@ -215,6 +154,7 @@ MonoBehaviour:
   SandTilePrefab: {fileID: 7575487225875797511, guid: 7f0ecc455c7670a43908fb1d973641d7, type: 3}
   WaterTilePrefab: {fileID: 7118174668888509513, guid: 6d6b1bfe094ea42409d87fd07c16cbea, type: 3}
   StoneTilePrefab: {fileID: 8195737221910241436, guid: d091a06ea8fa59e44ae10b221a599e2f, type: 3}
+  MapManagerPrefab: {fileID: 8182249798987309548, guid: e3f0ed4a302977641bd8e67bd02c55b1, type: 3}
 --- !u!4 &1416934875
 Transform:
   m_ObjectHideFlags: 0
@@ -235,4 +175,3 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1416934875}
-  - {fileID: 1181577527}
