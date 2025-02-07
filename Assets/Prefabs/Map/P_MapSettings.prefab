@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 8597039901126856409}
   - component: {fileID: 506552172071723822}
   m_Layer: 0
-  m_Name: P_MapManager
+  m_Name: P_MapSettings
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

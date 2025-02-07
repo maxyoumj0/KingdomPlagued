@@ -15,8 +15,6 @@ partial struct OverwriteMapManagerSystem : ISystem
             return;
         if (!SystemAPI.TryGetSingletonEntity<PrefabReferencesComponent>(out Entity prefabRefEntity))
             return;
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntityDD))
-            return;
 
         Debug.Log("Received PendingMapManagerSettingsComponent in OverwriteMapManagerSettingsComponent");
         PendingMapManagerSettingsComponent pendingSettings = SystemAPI.GetComponent<PendingMapManagerSettingsComponent>(pendingMapManagerSettingsEntity);
@@ -25,16 +23,15 @@ partial struct OverwriteMapManagerSystem : ISystem
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         PrefabReferencesComponent prefabRefComponent = SystemAPI.GetComponent<PrefabReferencesComponent>(prefabRefEntity);
         Entity mapManagerEntity = ecb.Instantiate(prefabRefComponent.MapManagerPrefab);
-        var TileSize = SystemAPI.GetComponentRO<MapManagerComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize;
+        var TileSize = SystemAPI.GetComponentRO<MapSettingsComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize;
 
-        ecb.SetComponent(mapManagerEntity, new MapManagerComponent
+        ecb.SetComponent(mapManagerEntity, new MapSettingsComponent
         {
             Seed = pendingSettings.Seed,
             MapWidth = pendingSettings.MapWidth,
             MapHeight = pendingSettings.MapHeight,
             ChunkSize = pendingSettings.ChunkSize,
-            TileSize = SystemAPI.GetComponentRO<MapManagerComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize,
-            TileDataBlob = SystemAPI.GetComponentRO<MapManagerComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileDataBlob
+            TileSize = SystemAPI.GetComponentRO<MapSettingsComponent>(prefabRefComponent.MapManagerPrefab).ValueRO.TileSize,
         });
         Debug.Log("Instantiated MapManager");
         ecb.Playback(state.EntityManager);

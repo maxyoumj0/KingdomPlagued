@@ -4,7 +4,7 @@ using Unity.NetCode;
 using Unity.Rendering;
 using UnityEngine;
 
-public class MapManagerAuthoring : MonoBehaviour
+public class MapSettingsAuthoring : MonoBehaviour
 {
     public GameObject DefaultTilePrefab;
     public int ChunkSize;
@@ -12,14 +12,13 @@ public class MapManagerAuthoring : MonoBehaviour
     public int MapHeight;
     public float Seed;
 
-    public class Baker : Baker<MapManagerAuthoring>
+    public class Baker : Baker<MapSettingsAuthoring>
     {
-        public override void Bake(MapManagerAuthoring authoring)
+        public override void Bake(MapSettingsAuthoring authoring)
         {
             Entity entity = GetEntity(TransformUsageFlags.None);
-            AddComponent(entity, new MapManagerComponent
+            AddComponent(entity, new MapSettingsComponent
             {
-                TileDataBlob = default,
                 ChunkSize = authoring.ChunkSize,
                 TileSize = authoring.DefaultTilePrefab.GetComponentInChildren<Renderer>().bounds.size.x,
                 MapWidth = authoring.MapWidth,
@@ -32,14 +31,18 @@ public class MapManagerAuthoring : MonoBehaviour
 }
 
 [GhostComponent]
-public struct MapManagerComponent : IComponentData
+public struct MapSettingsComponent : IComponentData
 {
-    public BlobAssetReference<TileBlob> TileDataBlob;  // Static Map Data
     [GhostField] public int ChunkSize;
     [GhostField] public float TileSize;
     [GhostField] public int MapWidth;
     [GhostField] public int MapHeight;
     [GhostField] public float Seed;
+}
+
+public struct MapDataComponent : IComponentData
+{
+    public BlobAssetReference<TileBlob> TileDataBlob;  // Static Map Data
 }
 
 public struct TileBlob

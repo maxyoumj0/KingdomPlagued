@@ -49,7 +49,6 @@ partial struct GoInGameServerSystem : ISystem
 
             // Ask MapGenServerSystem to generate map on the server
             Entity genMapentity = ecb.CreateEntity();
-            Debug.Log("GenServerMap added");
             ecb.AddComponent<GenServerMap>(genMapentity);
 
             ecb.DestroyEntity(RpcEntity);

@@ -22,14 +22,14 @@ partial struct ChunkReceiverSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         // Ensure MapManagerComponent is all set
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        if (!SystemAPI.TryGetSingletonEntity<MapSettingsComponent>(out Entity mapSettingsEntity))
             return;
-        MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
-        if (!mapManager.TileDataBlob.IsCreated)
+        if (!SystemAPI.TryGetSingleton<MapDataComponent>(out MapDataComponent mapData))
             return;
 
-        int chunkSize = mapManager.ChunkSize;
-        int mapWidth = mapManager.MapWidth;
+        MapSettingsComponent mapSettings = SystemAPI.GetComponent<MapSettingsComponent>(mapSettingsEntity);
+        int chunkSize = mapSettings.ChunkSize;
+        int mapWidth = mapSettings.MapWidth;
         PrefabReferencesComponent prefabRefEntity = SystemAPI.GetSingleton<PrefabReferencesComponent>();
         quaternion tileRotation = SystemAPI.GetComponentRO<LocalTransform>(MapManagerHelper.TileTypeToPrefab(TileType.Grass, prefabRefEntity)).ValueRO.Rotation;
         float tileScale = SystemAPI.GetComponentRO<LocalTransform>(MapManagerHelper.TileTypeToPrefab(TileType.Grass, prefabRefEntity)).ValueRO.Scale;
@@ -72,7 +72,7 @@ partial struct ChunkReceiverSystem : ISystem
                     chunkSize = chunkSize,
                     mapWidth = mapWidth,
                     chunkCoord = rpc.ValueRO.ChunkCoord,
-                    tileBlob = mapManager.TileDataBlob,
+                    tileBlob = mapData.TileDataBlob,
                     prefabRefEntity = prefabRefEntity,
                     ecb = ecbJob,
                     tileRotation = tileRotation,

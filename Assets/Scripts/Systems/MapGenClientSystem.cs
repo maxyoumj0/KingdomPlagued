@@ -19,12 +19,12 @@ partial struct MapGenClientSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.TryGetSingleton<MapDataComponent>(out MapDataComponent mapData))
+            return;
+
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        foreach (RefRO<MapManagerComponent> mapManager in SystemAPI.Query<RefRO<MapManagerComponent>>())
+        foreach (RefRO<MapSettingsComponent> mapManager in SystemAPI.Query<RefRO<MapSettingsComponent>>())
         {
-            // Ensure that TileDataBlob is generated on the server
-            if (!mapManager.ValueRO.TileDataBlob.IsCreated)
-                break;
             Debug.Log("GenerateWorld Client System");
             GenerateWorld(ecb, mapManager.ValueRO.MapWidth, mapManager.ValueRO.MapHeight, mapManager.ValueRO.Seed, mapManager.ValueRO.TileSize, mapManager.ValueRO.ChunkSize);
         }
@@ -77,15 +77,10 @@ partial struct MapGenClientSystem : ISystem
             BlobAssetReference<TileBlob> blobReference = builder.CreateBlobAssetReference<TileBlob>(Allocator.Persistent);
 
             // Create MapManager Singleton Entity
-            Entity mapEntity = SystemAPI.GetSingletonEntity<MapManagerComponent>();
-            ecb.SetComponent(mapEntity, new MapManagerComponent
+            Entity mapEntity = ecb.CreateEntity();
+            ecb.AddComponent(mapEntity, new MapDataComponent
             {
-                TileDataBlob = blobReference,
-                ChunkSize = chunkSize,
-                TileSize = tileSize,
-                MapWidth = mapWidth,
-                MapHeight = mapHeight,
-                Seed = seed
+                TileDataBlob = blobReference
             });
         }
     }

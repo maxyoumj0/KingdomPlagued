@@ -20,29 +20,21 @@ partial struct MapGenServerSystem : ISystem
     //[BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        foreach ((RefRO<LocalTransform> localTransformComponent, Entity entity) in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<PlayerComponent>().WithEntityAccess())
+        if (SystemAPI.TryGetSingleton<MapDataComponent>(out MapDataComponent mapData))
+            return;
+
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+        // Handle GenServerMap from `MapGenServerSystem`
+        foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
         {
-            Debug.Log("TEST");
+            foreach ((RefRO<MapSettingsComponent> mapManager, Entity managerEntity) in SystemAPI.Query<RefRO<MapSettingsComponent>>().WithEntityAccess())
+            {
+                Debug.Log("Generating server map");
+                GenerateWorld(ecb, mapManager.ValueRO);
+                ecb.DestroyEntity(entity);
+            }
         }
-
-        //EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        //// Handle GenServerMap from `MapGenServerSystem`
-        //foreach (var (mapManager, entity) in SystemAPI.Query<RefRO<MapManagerComponent>>().WithEntityAccess())
-        //{
-        //    Debug.Log($"Server Found MapManagerComponent on Entity {entity.Index}");
-        //}
-
-        //foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
-        //{
-        //    foreach ((RefRO<MapManagerComponent>  mapManager, Entity managerEntity) in SystemAPI.Query<RefRO<MapManagerComponent>>().WithEntityAccess())
-        //    {
-        //        Debug.Log("Generating server map");
-        //        GenerateWorld(ecb, mapManager.ValueRO);
-        //        ecb.DestroyEntity(entity);
-        //    }
-        //}
-
-        //ecb.Playback(state.EntityManager);
+        ecb.Playback(state.EntityManager);
     }
 
     [BurstCompile]
@@ -51,12 +43,13 @@ partial struct MapGenServerSystem : ISystem
         
     }
 
-    private void GenerateWorld(EntityCommandBuffer ecb, MapManagerComponent mapManagerComponent)
+    // TODO: Turn this into a job
+    private void GenerateWorld(EntityCommandBuffer ecb, MapSettingsComponent mapSettingsComponent)
     {
-        int mapWidth = mapManagerComponent.MapWidth;
-        int mapHeight = mapManagerComponent.MapHeight;
-        float seed = mapManagerComponent.Seed;
-        float tileSize = mapManagerComponent.TileSize;
+        int mapWidth = mapSettingsComponent.MapWidth;
+        int mapHeight = mapSettingsComponent.MapHeight;
+        float seed = mapSettingsComponent.Seed;
+        float tileSize = mapSettingsComponent.TileSize;
         int totalTiles = mapWidth * mapHeight;
 
         using (BlobBuilder builder = new BlobBuilder(Allocator.Temp))
@@ -91,8 +84,12 @@ partial struct MapGenServerSystem : ISystem
                     i++;
                 }
             }
-
             BlobAssetReference<TileBlob> blobReference = builder.CreateBlobAssetReference<TileBlob>(Allocator.Persistent);
+            Entity mapDataEntity = ecb.CreateEntity();
+            ecb.AddComponent(mapDataEntity, new MapDataComponent
+            {
+                TileDataBlob = blobReference,
+            });
         }
     }
 

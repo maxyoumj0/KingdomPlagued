@@ -20,20 +20,18 @@ partial struct ChunkLoaderSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         // Get map settings
-        if (!SystemAPI.TryGetSingletonEntity<MapManagerComponent>(out Entity mapManagerEntity))
+        if (!SystemAPI.TryGetSingletonEntity<MapSettingsComponent>(out Entity mapSettingsEntity))
+            return;
+        if (!SystemAPI.TryGetSingletonEntity<MapSettingsComponent>(out Entity mapDataEntity))
             return;
 
-        MapManagerComponent mapManager = SystemAPI.GetComponent<MapManagerComponent>(mapManagerEntity);
-
-        // Ensure that TileDataBlob is generated on the server
-        if (!mapManager.TileDataBlob.IsCreated)
-            return;
+        MapSettingsComponent mapSettings = SystemAPI.GetComponent<MapSettingsComponent>(mapSettingsEntity);
 
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        float tileSize = mapManager.TileSize;
-        int chunkSize = mapManager.ChunkSize;
-        int mapWidth = mapManager.MapWidth;
-        int mapHeight = mapManager.MapHeight;
+        float tileSize = mapSettings.TileSize;
+        int chunkSize = mapSettings.ChunkSize;
+        int mapWidth = mapSettings.MapWidth;
+        int mapHeight = mapSettings.MapHeight;
 
         NativeHashSet<int2> activeChunks = new(16, Allocator.Temp);
 
