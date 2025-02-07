@@ -1,7 +1,6 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Collections;
-using UnityEngine;
 
 [UpdateInGroup(typeof(InitializationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
@@ -16,7 +15,6 @@ partial struct OverwriteMapManagerSystem : ISystem
         if (!SystemAPI.TryGetSingletonEntity<PrefabReferencesComponent>(out Entity prefabRefEntity))
             return;
 
-        Debug.Log("Received PendingMapManagerSettingsComponent in OverwriteMapManagerSettingsComponent");
         PendingMapManagerSettingsComponent pendingSettings = SystemAPI.GetComponent<PendingMapManagerSettingsComponent>(pendingMapManagerSettingsEntity);
 
         // Overwrite MapManager settings based on host's preference

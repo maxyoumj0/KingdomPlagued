@@ -1,6 +1,5 @@
 using Unity.Entities;
 using Unity.NetCode;
-using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -55,9 +54,10 @@ public class ConnectionManager : MonoBehaviour
     [ContextMenu("Start Client")]
     public void StartClient()
     {
-        World client = ClientServerBootstrap.CreateServerWorld("ClientWorld");
-
+        Debug.Log("[DEBUG] StartClient() was called!");
+        World client = ClientServerBootstrap.CreateClientWorld("FKWORLD");
         DestroyLocalWorld();
+        World.DefaultGameObjectInjectionWorld ??= client;
 
         SceneManager.LoadSceneAsync("GameScene");
         {

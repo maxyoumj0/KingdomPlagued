@@ -88,7 +88,15 @@ partial struct ChunkReceiverSystem : ISystem
         foreach ((RefRO<UnloadChunkRpc> rpc, Entity rpcEntity) in SystemAPI.Query<RefRO<UnloadChunkRpc>>().WithAll<ReceiveRpcCommandRequest>().WithEntityAccess())
         {
             Debug.Log($"Unloading chunk at {rpc.ValueRO.ChunkCoord}");
-
+            // Destroy Chunks if exists
+            foreach ((RefRO<ChunkComponent> chunk, Entity chunkEntity) in SystemAPI.Query<RefRO<ChunkComponent>>().WithEntityAccess())
+            {
+                if (chunk.ValueRO.ChunkCoord.Equals(rpc.ValueRO.ChunkCoord))
+                {
+                    ecbMain.DestroyEntity(chunkEntity);
+                    break;
+                }
+            }
             // Unload chunk if it's still loaded
             EntityCommandBuffer.ParallelWriter ecbJob = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
             var job = new DestroyTilesJob
