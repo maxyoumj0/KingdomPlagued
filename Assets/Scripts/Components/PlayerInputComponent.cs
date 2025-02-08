@@ -25,4 +25,5 @@ public struct PlayerInput : IInputComponentData
     public float2 Move;
     public float2 Look;
     public float Zoom;
+    public float2 MousePos;
 }

@@ -1,10 +1,14 @@
+using Unity.Entities;
+using Unity.NetCode;
 using UnityEngine;
-using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 public class BuildPanel : MonoBehaviour
 {
     public GameObject InteractPanel;
-    private GameObject _localPlayer;
+    private World clientWorld;
+    private EntityManager entityManager;
+
     void Awake()
     {
         gameObject.SetActive(false);
@@ -12,33 +16,32 @@ public class BuildPanel : MonoBehaviour
 
     void Start()
     {
-        //if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
-        //{
-        //    // Get the local player's NetworkObject
-        //    var localPlayerObject = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject();
-        //    if (localPlayerObject != null)
-        //    {
-        //        _localPlayer = localPlayerObject.gameObject;
-        //    }
-        //    else
-        //    {
-        //        Debug.LogError("Local player object not found!");
-        //    }
-        //}
-        //else
-        //{
-        //    Debug.LogError("NetworkManager not found or not running as a client!");
-        //}
+        clientWorld = World.DefaultGameObjectInjectionWorld;
+        entityManager = clientWorld.EntityManager;
     }
 
     public void TestBuilding()
     {
-        //GameManager.Instance.SpawnBuildingBlueprintServerRpc(BuildingEnum.TestBuilding, Mouse.current.position.ReadValue());
+        SendBuildingRpc(BuildingEnum.TestBuilding);
     }
 
     public void Back()
     {
         InteractPanel.SetActive(true);
         gameObject.SetActive(false);
+    }
+
+    private void SendBuildingRpc(BuildingEnum buildingEnum)
+    {
+        var query = entityManager.CreateEntityQuery(ComponentType.ReadOnly<NetworkId>());
+        if (query.IsEmpty)
+        {
+            Debug.LogError("No client connection found!");
+            return;
+        }
+        Entity networkIdEntity = query.GetSingletonEntity();
+        Entity rpcEntity = entityManager.CreateEntity();
+        entityManager.AddComponentData(rpcEntity, new BuildingSelectedRpc { BuildingEnum = buildingEnum });
+        entityManager.AddComponentData(rpcEntity, new SendRpcCommandRequest { TargetConnection = networkIdEntity });
     }
 }

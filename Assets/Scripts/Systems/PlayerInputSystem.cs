@@ -22,11 +22,13 @@ public partial class PlayerInputSystem : SystemBase
     {
         Vector2 moveValue = _controls.Player.Move.ReadValue<Vector2>();
         float zoomValue = _controls.Player.Zoom.ReadValue<float>();
+        Vector2 mousePos = _controls.Player.MousePosition.ReadValue<Vector2>();
 
         foreach (RefRW<PlayerInput> playerInput in SystemAPI.Query<RefRW<PlayerInput>>().WithAll<GhostOwnerIsLocal>())
         {
             playerInput.ValueRW.Move = moveValue;
             playerInput.ValueRW.Zoom = -1 * zoomValue;
+            playerInput.ValueRW.MousePos = mousePos;
         }
     }
 
