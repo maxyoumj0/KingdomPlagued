@@ -12,7 +12,7 @@ public class BuildingPrefabAuthoring : MonoBehaviour
         public override void Bake(BuildingPrefabAuthoring authoring)
         {
             Entity entity = GetEntity(TransformUsageFlags.None);
-            AddComponent(entity, new PrefabReferencesComponent
+            AddComponent(entity, new BuildingPrefabComponent
             {
                 TestBuildingBlueprintPrefab = GetEntity(authoring.TestBuildingBlueprintPrefab, TransformUsageFlags.Dynamic),
                 TestBuildingPrefab = GetEntity(authoring.TestBuildingPrefab, TransformUsageFlags.Dynamic)

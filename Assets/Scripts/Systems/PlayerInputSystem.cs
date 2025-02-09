@@ -2,6 +2,7 @@ using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
 using Unity.Collections;
+using Unity.Mathematics;
 
 [UpdateInGroup(typeof(GhostInputSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
@@ -22,18 +23,49 @@ public partial class PlayerInputSystem : SystemBase
     {
         Vector2 moveValue = _controls.Player.Move.ReadValue<Vector2>();
         float zoomValue = _controls.Player.Zoom.ReadValue<float>();
-        Vector2 mousePos = _controls.Player.MousePosition.ReadValue<Vector2>();
+        float3 mousePos = float3.zero;
+        float leftClick = _controls.Player.LeftClick.ReadValue<float>();
+
+        EntityManager entityManager = World.EntityManager;
+
+        foreach (DynamicBuffer<LinkedEntityGroup> linkedEntities in SystemAPI.Query<DynamicBuffer<LinkedEntityGroup>>().WithAll<GhostOwnerIsLocal>().WithAll<PlayerComponent>())
+        {
+            foreach (LinkedEntityGroup linkedEntity in linkedEntities)
+            {
+                if (entityManager.HasComponent<Camera>(linkedEntity.Value))
+                {
+                    Camera playerCamera = entityManager.GetComponentObject<Camera>(linkedEntity.Value);
+                    mousePos = ScreenToWorld(_controls.Player.MousePosition.ReadValue<Vector2>(), playerCamera);
+                }
+            }
+        }
 
         foreach (RefRW<PlayerInput> playerInput in SystemAPI.Query<RefRW<PlayerInput>>().WithAll<GhostOwnerIsLocal>())
         {
             playerInput.ValueRW.Move = moveValue;
             playerInput.ValueRW.Zoom = -1 * zoomValue;
             playerInput.ValueRW.MousePos = mousePos;
+            playerInput.ValueRW.LeftClick = leftClick;
         }
     }
 
     protected override void OnDestroy()
     {
         _controls.Disable();
+    }
+
+    private float3 ScreenToWorld(Vector2 screenPos, Camera camera)
+    {
+        Ray ray = camera.ScreenPointToRay(screenPos);
+        Debug.DrawRay(ray.origin, ray.direction * 100f, Color.red, 2f);
+        if (Physics.Raycast(ray, out RaycastHit hit, 1000f))
+        {
+            Debug.Log($"Raycast hit: {hit.collider.gameObject.name} at {hit.point}");
+            return hit.point;
+        } else
+        {
+            Debug.Log("Raycast missed! No colliders detected.");
+        }
+        return float3.zero;
     }
 }

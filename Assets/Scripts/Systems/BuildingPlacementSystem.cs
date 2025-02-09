@@ -20,11 +20,12 @@ partial struct BuildingPlacementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (SystemAPI.TryGetSingleton<MapDataComponent>(out MapDataComponent mapData))
+        if (SystemAPI.TryGetSingleton(out MapDataComponent mapData))
+            return;
+        if (SystemAPI.TryGetSingleton(out BuildingPrefabComponent prefabRefs))
             return;
 
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
-        BuildingPrefabComponent prefabRefs = SystemAPI.GetSingleton<BuildingPrefabComponent>();
         foreach (var (buildingSelectedRpc, receiveRpcCommand, entity) in SystemAPI.Query<RefRO<BuildingSelectedRpc>, RefRO<ReceiveRpcCommandRequest>>().WithEntityAccess())
         {
             Entity buildingBlueprintPrefabEntity = ecb.Instantiate(BuildingPrefabHelper.BuildingEnumToEntity(prefabRefs, buildingSelectedRpc.ValueRO.BuildingEnum, true));
