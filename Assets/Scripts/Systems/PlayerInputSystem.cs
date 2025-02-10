@@ -3,8 +3,11 @@ using Unity.NetCode;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Physics.Systems;
 
 [UpdateInGroup(typeof(GhostInputSystemGroup))]
+[UpdateAfter(typeof(PhysicsSimulationGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
 public partial class PlayerInputSystem : SystemBase
 {
@@ -56,15 +59,20 @@ public partial class PlayerInputSystem : SystemBase
 
     private float3 ScreenToWorld(Vector2 screenPos, Camera camera)
     {
-        Ray ray = camera.ScreenPointToRay(screenPos);
-        Debug.DrawRay(ray.origin, ray.direction * 100f, Color.red, 2f);
-        if (Physics.Raycast(ray, out RaycastHit hit, 1000f))
+        PhysicsWorldSingleton physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+        UnityEngine.Ray ray = camera.ScreenPointToRay(screenPos);
+        RaycastInput rayInput = new RaycastInput
         {
-            Debug.Log($"Raycast hit: {hit.collider.gameObject.name} at {hit.point}");
-            return hit.point;
+            Start = ray.origin,
+            End = ray.origin + (ray.direction * 100f), // Cast up to 100 units
+            Filter = CollisionFilter.Default
+        };
+        if (physicsWorld.CastRay(rayInput, out Unity.Physics.RaycastHit hit))
+        {
+            Debug.Log($"Hit entity: {hit.Entity.Index}");
         } else
         {
-            Debug.Log("Raycast missed! No colliders detected.");
+            Debug.Log("Raycast missed!");
         }
         return float3.zero;
     }
