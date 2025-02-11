@@ -1,12 +1,12 @@
 using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class BuildPanel : MonoBehaviour
 {
     public GameObject InteractPanel;
     private World clientWorld;
+    private World serverWorld;
     private EntityManager entityManager;
 
     void Awake()
@@ -16,8 +16,17 @@ public class BuildPanel : MonoBehaviour
 
     void Start()
     {
-        clientWorld = World.DefaultGameObjectInjectionWorld;
-        entityManager = clientWorld.EntityManager;
+        foreach(var world in World.All)
+        {
+            if (world.IsClient() && !world.IsThinClient())
+            {
+                clientWorld = world;
+                entityManager = clientWorld.EntityManager;
+            } else if (world.IsServer())
+            {
+                serverWorld = world;
+            }
+        }
     }
 
     public void TestBuilding()
@@ -33,7 +42,10 @@ public class BuildPanel : MonoBehaviour
 
     private void SendBuildingRpc(BuildingEnum buildingEnum)
     {
-        var query = entityManager.CreateEntityQuery(ComponentType.ReadOnly<NetworkId>());
+        Debug.Log("SendBuildingRpc called");
+        if (clientWorld == null || !clientWorld.IsCreated) return;
+
+        var query = entityManager.CreateEntityQuery(ComponentType.ReadOnly<NetworkId>(), ComponentType.ReadOnly<NetworkStreamConnection>());
         if (query.IsEmpty)
         {
             Debug.LogError("No client connection found!");
@@ -43,5 +55,6 @@ public class BuildPanel : MonoBehaviour
         Entity rpcEntity = entityManager.CreateEntity();
         entityManager.AddComponentData(rpcEntity, new BuildingSelectedRpc { BuildingEnum = buildingEnum });
         entityManager.AddComponentData(rpcEntity, new SendRpcCommandRequest { TargetConnection = networkIdEntity });
+        Debug.Log($"Sending RPC from world: {clientWorld.Name}");
     }
 }
