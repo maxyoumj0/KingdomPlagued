@@ -26,7 +26,6 @@ partial struct BuildingPlacementSystem : ISystem
         if (!SystemAPI.TryGetSingleton(out BuildingPrefabComponent prefabRefs))
             return;
 
-        Debug.Log("HERE");
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         foreach (var (buildingSelectedRpc, receiveRpcCommand, entity) in SystemAPI.Query<RefRO<BuildingSelectedRpc>, RefRO<ReceiveRpcCommandRequest>>().WithEntityAccess())
         {
@@ -44,8 +43,6 @@ partial struct BuildingPlacementSystem : ISystem
             {
                 NetworkId = senderNetworkId
             });
-
-            Debug.Log("buildingBlueprintEntity Instantiated");
 
             playerBuildingMode.Add(senderNetworkId);
             ecb.DestroyEntity(entity);

@@ -14,7 +14,7 @@ public class PlayerInputAuthoring : MonoBehaviour
                 Move = float2.zero,
                 Look = float2.zero,
                 Zoom = 0f,
-                MousePos = float2.zero,
+                MousePos = float3.zero,
                 LeftClick = 0.0f
             });
         }
@@ -27,6 +27,6 @@ public struct PlayerInput : IInputComponentData
     public float2 Move;
     public float2 Look;
     public float Zoom;
-    public float2 MousePos;
+    public float3 MousePos;
     public float LeftClick;
 }

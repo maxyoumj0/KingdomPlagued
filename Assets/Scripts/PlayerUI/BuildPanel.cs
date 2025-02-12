@@ -6,7 +6,6 @@ public class BuildPanel : MonoBehaviour
 {
     public GameObject InteractPanel;
     private World clientWorld;
-    private World serverWorld;
     private EntityManager entityManager;
 
     void Awake()
@@ -22,9 +21,7 @@ public class BuildPanel : MonoBehaviour
             {
                 clientWorld = world;
                 entityManager = clientWorld.EntityManager;
-            } else if (world.IsServer())
-            {
-                serverWorld = world;
+                break;
             }
         }
     }
