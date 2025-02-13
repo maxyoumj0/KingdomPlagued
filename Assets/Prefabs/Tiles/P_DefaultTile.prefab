@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4129091808159182247}
   - component: {fileID: 1894908305980201771}
   - component: {fileID: 7328839549746851061}
-  - component: {fileID: 551600201170511879}
+  - component: {fileID: -4479778229544136108}
   m_Layer: 0
   m_Name: P_DefaultTile
   m_TagString: Untagged
@@ -113,7 +113,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c16549610bfe4458aa9389201d072bb6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!65 &551600201170511879
+--- !u!65 &-4479778229544136108
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

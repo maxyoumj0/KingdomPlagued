@@ -4,22 +4,34 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Physics;
+using Unity.Physics.Systems;
 using Unity.Transforms;
 using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+[UpdateAfter(typeof(FixedStepSimulationSystemGroup))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
 partial struct BuildingBlueprintTrackingSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        
+        state.RequireForUpdate<PhysicsWorldSingleton>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        if (!SystemAPI.HasSingleton<PhysicsWorldSingleton>())
+        {
+            Debug.LogError("PhysicsWorldSingleton is missing!");
+            return;
+        }
+
+        CollisionWorld collisionWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld;
+
         foreach (var (blueprintOwner, localTransform) in SystemAPI.Query<RefRO<GhostOwner>, RefRW<LocalTransform>>().WithAll<BuildingBlueprintTagComponent>())
         {
             foreach (var (playerInput, playerGhostOwner, playerTransform) in SystemAPI.Query<RefRO<PlayerInput>, RefRO<GhostOwner>, RefRO<LocalTransform>>())
@@ -27,7 +39,7 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
                 if (blueprintOwner.ValueRO.NetworkId != playerGhostOwner.ValueRO.NetworkId)
                     continue;
 
-                localTransform.ValueRW.Position = playerInput.ValueRO.MousePos;
+                localTransform.ValueRW.Position = ScreenToWorld(playerInput.ValueRO.MousePos, playerTransform.ValueRO, collisionWorld);
                 Debug.Log($"localTransform.Position set to {localTransform.ValueRW.Position}");
                 if (playerInput.ValueRO.LeftClick == 1.0f)
                 {
@@ -44,5 +56,33 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
     public void OnDestroy(ref SystemState state)
     {
         
+    }
+
+    private float3 ScreenToWorld(float2 screenPos, LocalTransform playerTransform, CollisionWorld collisionWorld)
+    {
+        Debug.Log($"PhysicsWorld contains {collisionWorld.NumBodies} bodies.");
+
+        float3 rayStart = playerTransform.Position;
+        float3 rayDirection = math.forward(playerTransform.Rotation);
+
+        RaycastInput rayInput = new RaycastInput
+        {
+            Start = rayStart,
+            End = rayStart + rayDirection * 1000f,
+            Filter = CollisionFilter.Default
+        };
+
+        Debug.DrawRay(rayInput.Start, rayInput.End - rayInput.Start, Color.red, 5f);
+
+        if (collisionWorld.CastRay(rayInput, out var hit))
+        {
+            Debug.Log($"Hit entity: {hit.Entity.Index} at {hit.Position}");
+            return hit.Position;
+        }
+        else
+        {
+            Debug.Log("Raycast missed!");
+            return float3.zero;
+        }
     }
 }
