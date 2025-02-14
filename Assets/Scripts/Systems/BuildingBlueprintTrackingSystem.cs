@@ -8,7 +8,7 @@ using Unity.Physics.Systems;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+[UpdateInGroup(typeof(PhysicsSystemGroup))]
 [UpdateAfter(typeof(FixedStepSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
 partial struct BuildingBlueprintTrackingSystem : ISystem
@@ -24,12 +24,6 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
     {
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        if (!SystemAPI.HasSingleton<PhysicsWorldSingleton>())
-        {
-            Debug.LogError("PhysicsWorldSingleton is missing!");
-            return;
-        }
-
         CollisionWorld collisionWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld;
 
         foreach (var (blueprintOwner, localTransform) in SystemAPI.Query<RefRO<GhostOwner>, RefRW<LocalTransform>>().WithAll<BuildingBlueprintTagComponent>())
@@ -39,7 +33,7 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
                 if (blueprintOwner.ValueRO.NetworkId != playerGhostOwner.ValueRO.NetworkId)
                     continue;
 
-                localTransform.ValueRW.Position = ScreenToWorld(playerInput.ValueRO.MousePos, playerTransform.ValueRO, collisionWorld);
+                localTransform.ValueRW.Position = ScreenToWorld(playerInput.ValueRO.MousePos, playerTransform.ValueRO, localTransform.ValueRO, collisionWorld);
                 Debug.Log($"localTransform.Position set to {localTransform.ValueRW.Position}");
                 if (playerInput.ValueRO.LeftClick == 1.0f)
                 {
@@ -58,10 +52,8 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
         
     }
 
-    private float3 ScreenToWorld(float2 screenPos, LocalTransform playerTransform, CollisionWorld collisionWorld)
+    private float3 ScreenToWorld(float2 screenPos, LocalTransform playerTransform, LocalTransform blueprintTransform, CollisionWorld collisionWorld)
     {
-        Debug.Log($"PhysicsWorld contains {collisionWorld.NumBodies} bodies.");
-
         float3 rayStart = playerTransform.Position;
         float3 rayDirection = math.forward(playerTransform.Rotation);
 
@@ -69,10 +61,15 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
         {
             Start = rayStart,
             End = rayStart + rayDirection * 1000f,
-            Filter = CollisionFilter.Default
+            Filter = new CollisionFilter
+            {
+                BelongsTo = ~0u,
+                CollidesWith = ~0u,
+                GroupIndex = 0
+            }
         };
 
-        Debug.DrawRay(rayInput.Start, rayInput.End - rayInput.Start, Color.red, 5f);
+        Debug.DrawLine(rayStart, rayInput.End, Color.green, 5f);
 
         if (collisionWorld.CastRay(rayInput, out var hit))
         {
@@ -82,7 +79,7 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
         else
         {
             Debug.Log("Raycast missed!");
-            return float3.zero;
+            return blueprintTransform.Position;
         }
     }
 }
