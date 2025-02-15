@@ -1,6 +1,8 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class BuildingBlueprintTagAuthoring: MonoBehaviour
 {
@@ -8,11 +10,14 @@ public class BuildingBlueprintTagAuthoring: MonoBehaviour
     {
         public override void Bake(BuildingBlueprintTagAuthoring authoring)
         {
-            AddComponent(GetEntity(TransformUsageFlags.Dynamic), new BuildingBlueprintTagComponent {});
+            Entity entity = GetEntity(TransformUsageFlags.Dynamic);
+            AddComponent(entity, new BuildingBlueprintTagComponent {});
+            AddComponent(entity, new GhostInstance());
         }
     }
 }
 
+[GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
 public struct BuildingBlueprintTagComponent : IComponentData
 {
     

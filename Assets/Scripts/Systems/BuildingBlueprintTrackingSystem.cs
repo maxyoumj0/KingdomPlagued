@@ -19,7 +19,6 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
         state.RequireForUpdate<PhysicsWorldSingleton>();
     }
 
-    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
@@ -32,8 +31,13 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
             {
                 if (blueprintOwner.ValueRO.NetworkId != playerGhostOwner.ValueRO.NetworkId)
                     continue;
-
-                localTransform.ValueRW.Position = ScreenToWorld(playerInput.ValueRO.MousePos, playerTransform.ValueRO, localTransform.ValueRO, playerEntity, state.EntityManager, collisionWorld);
+                Camera playerCamera = PlayerCameraHelper.GetPlayerCamera(playerEntity, state.EntityManager);
+                if (playerCamera == null)
+                {
+                    Debug.LogError("No Camera found on player entity!");
+                    continue;
+                }
+                localTransform.ValueRW.Position = ScreenToWorld(playerInput.ValueRO.MousePos, playerTransform.ValueRO, localTransform.ValueRO, playerEntity, playerCamera, collisionWorld);
                 Debug.Log($"localTransform.Position set to {localTransform.ValueRW.Position}");
                 if (playerInput.ValueRO.LeftClick == 1.0f)
                 {
@@ -52,14 +56,8 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
         
     }
 
-    private float3 ScreenToWorld(float2 screenPos, LocalTransform playerTransform, LocalTransform blueprintTransform, Entity playerEntity, EntityManager entityManager, CollisionWorld collisionWorld)
+    private float3 ScreenToWorld(float2 screenPos, LocalTransform playerTransform, LocalTransform blueprintTransform, Entity playerEntity, Camera playerCamera, CollisionWorld collisionWorld)
     {
-        Camera playerCamera = PlayerCameraHelper.GetPlayerCamera(playerEntity, entityManager);
-        if (playerCamera == null)
-        {
-            Debug.LogError("No Camera found on player entity!");
-            return blueprintTransform.Position;
-        }
         UnityEngine.Ray ray = playerCamera.ScreenPointToRay(new float3(screenPos.x, screenPos.y, 0));
 
         // Create a RaycastInput for Unity.Physics
@@ -75,19 +73,16 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
             }
         };
 
-        // Debug visualization
-        Debug.DrawLine(rayInput.Start, rayInput.End, Color.green, 5f);
-
         // Perform the raycast
         if (collisionWorld.CastRay(rayInput, out var hit))
         {
             Debug.Log($"Hit entity: {hit.Entity.Index} at {hit.Position}");
-            return hit.Position; // Return the hit position
+            return hit.Position;
         }
         else
         {
             Debug.Log("Raycast missed!");
-            return blueprintTransform.Position; // Fallback if no hit
+            return blueprintTransform.Position;
         }
     }
 }
