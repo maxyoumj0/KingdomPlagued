@@ -4,16 +4,13 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Physics;
-using Unity.Physics.Systems;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateInGroup(typeof(PhysicsSystemGroup))]
-[UpdateAfter(typeof(FixedStepSimulationSystemGroup))]
-[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
+[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 partial struct BuildingBlueprintTrackingSystem : ISystem
 {
-    [BurstCompile]
+    [BurstCompile]  
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<PhysicsWorldSingleton>();
@@ -25,9 +22,9 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
 
         CollisionWorld collisionWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld;
 
-        foreach (var (blueprintOwner, localTransform) in SystemAPI.Query<RefRO<GhostOwner>, RefRW<LocalTransform>>().WithAll<BuildingBlueprintTagComponent>())
+        foreach (var (blueprintOwner, localTransform, inputComponent) in SystemAPI.Query<RefRO<GhostOwner>, RefRW<LocalTransform>, RefRO<BuildingBlueprintInputComponent>>().WithAll<Simulate>())
         {
-            foreach (var (playerInput, playerGhostOwner, playerTransform, playerEntity) in SystemAPI.Query<RefRO<PlayerInput>, RefRO<GhostOwner>, RefRO<LocalTransform>>().WithEntityAccess())
+            foreach (var (playerGhostOwner, playerEntity) in SystemAPI.Query<RefRO<GhostOwner>>().WithAll<PlayerComponent>().WithEntityAccess())
             {
                 if (blueprintOwner.ValueRO.NetworkId != playerGhostOwner.ValueRO.NetworkId)
                     continue;
@@ -37,9 +34,13 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
                     Debug.LogError("No Camera found on player entity!");
                     continue;
                 }
-                localTransform.ValueRW.Position = ScreenToWorld(playerInput.ValueRO.MousePos, playerTransform.ValueRO, localTransform.ValueRO, playerEntity, playerCamera, collisionWorld);
-                Debug.Log($"localTransform.Position set to {localTransform.ValueRW.Position}");
-                if (playerInput.ValueRO.LeftClick == 1.0f)
+                var location = ScreenToWorld(inputComponent.ValueRO.MousePos, localTransform.ValueRO, playerCamera, collisionWorld);
+                if (!location.Equals(Vector3.zero))
+                {
+                    localTransform.ValueRW.Position = location;
+                    Debug.Log($"localTransform.Position set to {localTransform.ValueRW.Position}");
+                }
+                if (inputComponent.ValueRO.LeftClick == 1.0f)
                 {
                     Entity placeBuildingEntity = ecb.CreateEntity();
                     ecb.AddComponent<BuildingPlacedRpc>(placeBuildingEntity);
@@ -56,7 +57,7 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
         
     }
 
-    private float3 ScreenToWorld(float2 screenPos, LocalTransform playerTransform, LocalTransform blueprintTransform, Entity playerEntity, Camera playerCamera, CollisionWorld collisionWorld)
+    private float3 ScreenToWorld(float2 screenPos, LocalTransform blueprintTransform, Camera playerCamera, CollisionWorld collisionWorld)
     {
         UnityEngine.Ray ray = playerCamera.ScreenPointToRay(new float3(screenPos.x, screenPos.y, 0));
 

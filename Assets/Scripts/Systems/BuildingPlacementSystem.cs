@@ -32,6 +32,12 @@ partial struct BuildingPlacementSystem : ISystem
             Debug.Log("Received BuildingSelectedRpc");
             Entity buildingBlueprintPrefabEntity = BuildingPrefabHelper.BuildingEnumToEntity(prefabRefs, buildingSelectedRpc.ValueRO.BuildingEnum, true);
             int senderNetworkId = SystemAPI.GetComponent<NetworkId>(receiveRpcCommand.ValueRO.SourceConnection).Value;
+
+            if (senderNetworkId == 0)
+            {
+                break;
+            }
+
             Entity buildingBlueprintEntity = ecb.Instantiate(buildingBlueprintPrefabEntity);
             ecb.SetComponent(buildingBlueprintEntity, new LocalTransform
             {
