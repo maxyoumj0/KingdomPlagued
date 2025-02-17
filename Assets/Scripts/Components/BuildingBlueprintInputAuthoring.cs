@@ -11,7 +11,7 @@ public class BuildingBlueprintInputAuthoring : MonoBehaviour
         {
             AddComponent(GetEntity(TransformUsageFlags.Dynamic), new BuildingBlueprintInputComponent
             {
-                MousePos = float2.zero,
+                MousePos = float3.zero,
                 LeftClick = 0.0f
             });
         }
@@ -21,6 +21,6 @@ public class BuildingBlueprintInputAuthoring : MonoBehaviour
 [GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
 public struct BuildingBlueprintInputComponent : IInputComponentData
 {
-    public float2 MousePos;
+    public float3 MousePos;
     public float LeftClick;
 }

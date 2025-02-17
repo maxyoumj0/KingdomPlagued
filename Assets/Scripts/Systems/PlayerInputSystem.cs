@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Physics;
 
 [UpdateInGroup(typeof(GhostInputSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
@@ -27,12 +28,10 @@ public partial class PlayerInputSystem : SystemBase
         float2 mousePos = _controls.Player.MousePosition.ReadValue<Vector2>();
         float leftClick = _controls.Player.LeftClick.ReadValue<float>();
 
-        foreach ((RefRW<PlayerInput> playerInput, RefRO<LocalTransform> playerTransform) in SystemAPI.Query<RefRW<PlayerInput>, RefRO<LocalTransform>>().WithAll<GhostOwnerIsLocal>())
+        foreach (RefRW<PlayerInput> playerInput in SystemAPI.Query<RefRW<PlayerInput>>().WithAll<GhostOwnerIsLocal>())
         {
             playerInput.ValueRW.Move = moveValue;
             playerInput.ValueRW.Zoom = -1 * zoomValue;
-            playerInput.ValueRW.MousePos = mousePos;
-            playerInput.ValueRW.LeftClick = leftClick;
         }
     }
 
@@ -40,4 +39,6 @@ public partial class PlayerInputSystem : SystemBase
     {
         _controls.Disable();
     }
+
+    
 }
