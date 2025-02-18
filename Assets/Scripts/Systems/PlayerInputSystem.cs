@@ -25,8 +25,6 @@ public partial class PlayerInputSystem : SystemBase
     {
         Vector2 moveValue = _controls.Player.Move.ReadValue<Vector2>();
         float zoomValue = _controls.Player.Zoom.ReadValue<float>();
-        float2 mousePos = _controls.Player.MousePosition.ReadValue<Vector2>();
-        float leftClick = _controls.Player.LeftClick.ReadValue<float>();
 
         foreach (RefRW<PlayerInput> playerInput in SystemAPI.Query<RefRW<PlayerInput>>().WithAll<GhostOwnerIsLocal>())
         {

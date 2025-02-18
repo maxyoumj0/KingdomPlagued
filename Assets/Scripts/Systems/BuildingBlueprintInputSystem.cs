@@ -11,6 +11,7 @@ using UnityEngine;
 public partial class BuildingBlueprintInputSystem : SystemBase
 {
     private Controls _controls;
+    private Camera _playerCamera;
 
     protected override void OnCreate()
     {
@@ -25,11 +26,22 @@ public partial class BuildingBlueprintInputSystem : SystemBase
     {
         float2 mousePos = _controls.Player.MousePosition.ReadValue<Vector2>();
         float leftClick = _controls.Player.LeftClick.ReadValue<float>();
-        Camera _playerCamera = BuildPlayerCameraLookup();
-
-        foreach ((RefRW<BuildingBlueprintInputComponent> playerInput, RefRO<LocalTransform> transform, Entity entity) in SystemAPI.Query<RefRW<BuildingBlueprintInputComponent>, RefRO<LocalTransform>>().WithAll<GhostOwnerIsLocal>().WithEntityAccess())
+        if (_playerCamera == null)
         {
+            _playerCamera = BuildPlayerCameraLookup();
+        }
+
+        foreach ((RefRW<BuildingBlueprintInputComponent> playerInput, RefRO<LocalToWorld> transform, Entity entity) in SystemAPI.Query<RefRW<BuildingBlueprintInputComponent>, RefRO<LocalToWorld>>().WithAll<GhostOwnerIsLocal>().WithEntityAccess())
+        {
+            if (SystemAPI.TryGetSingleton(out NetworkTime networkTime))
+            {
+                Debug.Log($"[Client] Tick: {networkTime.ServerTick}, Position Before: {transform.ValueRO.Position}");
+            }
             playerInput.ValueRW.MousePos = playerInput.ValueRW.MousePos = ScreenToWorld(mousePos, _playerCamera, transform.ValueRO, SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld);
+            if (SystemAPI.TryGetSingleton(out NetworkTime afterTime))
+            {
+                Debug.Log($"[Client] Tick: {afterTime.ServerTick}, Position After: {transform.ValueRO.Position}");
+            }
             playerInput.ValueRW.LeftClick = leftClick;
         }
     }
@@ -56,7 +68,7 @@ public partial class BuildingBlueprintInputSystem : SystemBase
         return null;
     }
 
-    private float3 ScreenToWorld(float2 screenPos, Camera playerCamera, LocalTransform transform, CollisionWorld collisionWorld)
+    private float3 ScreenToWorld(float2 screenPos, Camera playerCamera, LocalToWorld transform, CollisionWorld collisionWorld)
     {
         UnityEngine.Ray ray = playerCamera.ScreenPointToRay(new float3(screenPos.x, screenPos.y, 0));
 
@@ -76,12 +88,10 @@ public partial class BuildingBlueprintInputSystem : SystemBase
         // Perform the raycast
         if (collisionWorld.CastRay(rayInput, out var hit))
         {
-            Debug.Log($"Hit entity: {hit.Entity.Index} at {hit.Position}");
             return hit.Position;
         }
         else
         {
-            Debug.Log("Raycast missed!");
             return transform.Position;
         }
     }
