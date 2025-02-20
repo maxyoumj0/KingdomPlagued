@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 //[RequireMatchingQueriesForUpdate]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
@@ -20,19 +21,15 @@ partial struct MapGenServerSystem : ISystem
     //[BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (SystemAPI.TryGetSingleton<MapDataComponent>(out MapDataComponent mapData))
+        if (SystemAPI.TryGetSingleton(out MapDataComponent mapData))
             return;
 
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         // Handle GenServerMap from `MapGenServerSystem`
-        foreach ((RefRO<GenServerMap> genServerMap, Entity entity) in SystemAPI.Query<RefRO<GenServerMap>>().WithEntityAccess())
+        foreach ((RefRO<MapSettingsComponent> mapManager, Entity managerEntity) in SystemAPI.Query<RefRO<MapSettingsComponent>>().WithEntityAccess())
         {
-            foreach ((RefRO<MapSettingsComponent> mapManager, Entity managerEntity) in SystemAPI.Query<RefRO<MapSettingsComponent>>().WithEntityAccess())
-            {
-                Debug.Log("Generating server map");
-                GenerateWorld(ecb, mapManager.ValueRO);
-                ecb.DestroyEntity(entity);
-            }
+            Debug.Log("Generating server map");
+            GenerateWorld(ecb, mapManager.ValueRO);
         }
         ecb.Playback(state.EntityManager);
     }
@@ -86,6 +83,7 @@ partial struct MapGenServerSystem : ISystem
             }
             BlobAssetReference<TileBlob> blobReference = builder.CreateBlobAssetReference<TileBlob>(Allocator.Persistent);
             Entity mapDataEntity = ecb.CreateEntity();
+            ecb.SetName(mapDataEntity, "MapData Entity");
             ecb.AddComponent(mapDataEntity, new MapDataComponent
             {
                 TileDataBlob = blobReference,

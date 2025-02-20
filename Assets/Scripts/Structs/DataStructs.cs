@@ -1,6 +1,4 @@
-using System.Collections.Generic;using UnityEngine;
-using Unity.Entities;
-using Unity.Mathematics;
+using UnityEngine;
 
 public struct BuildingData
 {

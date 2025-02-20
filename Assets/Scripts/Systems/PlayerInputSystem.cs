@@ -2,6 +2,9 @@ using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
 using Unity.Collections;
+using Unity.Mathematics;
+using Unity.Transforms;
+using Unity.Physics;
 
 [UpdateInGroup(typeof(GhostInputSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
@@ -34,4 +37,6 @@ public partial class PlayerInputSystem : SystemBase
     {
         _controls.Disable();
     }
+
+    
 }

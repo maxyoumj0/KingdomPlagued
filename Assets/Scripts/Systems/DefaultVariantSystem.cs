@@ -17,9 +17,9 @@ sealed partial class DefaultVariantSystem : DefaultVariantSystemBase
 [GhostComponent(PrefabType = GhostPrefabType.All, SendTypeOptimization = GhostSendType.AllClients)]
 public struct LocalTransformSync
 {
-    [GhostField(Quantization = 1000, Smoothing = SmoothingAction.InterpolateAndExtrapolate)]
+    [GhostField(Quantization = 0, Smoothing = SmoothingAction.InterpolateAndExtrapolate)]
     public float3 Position;
 
-    [GhostField(Quantization = 1000, Smoothing = SmoothingAction.InterpolateAndExtrapolate)]
+    [GhostField(Quantization = 0, Smoothing = SmoothingAction.InterpolateAndExtrapolate)]
     public quaternion Rotation;
 }

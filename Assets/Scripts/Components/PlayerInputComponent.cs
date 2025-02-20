@@ -13,7 +13,7 @@ public class PlayerInputAuthoring : MonoBehaviour
             {
                 Move = float2.zero,
                 Look = float2.zero,
-                Zoom = 0f
+                Zoom = 0f,
             });
         }
     }

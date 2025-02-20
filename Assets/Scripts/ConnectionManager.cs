@@ -54,8 +54,7 @@ public class ConnectionManager : MonoBehaviour
     [ContextMenu("Start Client")]
     public void StartClient()
     {
-        Debug.Log("[DEBUG] StartClient() was called!");
-        World client = ClientServerBootstrap.CreateClientWorld("FKWORLD");
+        World client = ClientServerBootstrap.CreateClientWorld("ClientWorld");
         DestroyLocalWorld();
         World.DefaultGameObjectInjectionWorld ??= client;
 

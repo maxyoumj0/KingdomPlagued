@@ -28,7 +28,6 @@ partial struct PlayerMovementSystem : ISystem
             float3 moveDirection = new float3(moveInput.x, 0, moveInput.y) * MoveSpeed * deltaTime;
             localTransform.ValueRW.Position += moveDirection;
             float zoomInput = playerInput.ValueRO.Zoom;
-            //Debug.Log($"zoomInput: {zoomInput}");
             localTransform.ValueRW.Position += new float3(0, zoomInput, 0) * ZoomSpeed * deltaTime;
         }
     }
