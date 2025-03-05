@@ -14,22 +14,19 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<PhysicsWorldSingleton>();
+        state.RequireForUpdate<NetworkTime>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingleton(out NetworkTime networkTime))
-            return;
+        SystemAPI.TryGetSingleton(out NetworkTime networkTime);
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
         foreach (var (blueprintOwner, localTransform, inputComponent) in SystemAPI.Query<RefRO<GhostOwner>, RefRW<LocalTransform>, RefRO<BuildingBlueprintInputComponent>>().WithAll<Simulate>())
         {
             if (networkTime.IsFirstTimeFullyPredictingTick)
             {
-                if (state.WorldUnmanaged.IsServer())
-                {
-                    Debug.Log($"[Server] Tick: {networkTime.ServerTick}, Position: {localTransform.ValueRO.Position}");
-                }
+                Debug.Log($"[{state.WorldUnmanaged.Name}] Tick: {networkTime.ServerTick.TickValue}, Position: {localTransform.ValueRO.Position}");
                 localTransform.ValueRW.Position = inputComponent.ValueRO.MousePos;
             }
 

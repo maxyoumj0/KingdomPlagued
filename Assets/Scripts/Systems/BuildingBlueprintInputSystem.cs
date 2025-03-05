@@ -1,4 +1,3 @@
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -17,9 +16,6 @@ public partial class BuildingBlueprintInputSystem : SystemBase
     {
         _controls = new Controls();
         _controls.Enable();
-        EntityQueryBuilder builder = new EntityQueryBuilder(Allocator.Temp);
-        builder.WithAny<BuildingBlueprintInputComponent>();
-        RequireForUpdate(GetEntityQuery(builder));
     }
 
     protected override void OnUpdate()
@@ -28,20 +24,14 @@ public partial class BuildingBlueprintInputSystem : SystemBase
         float leftClick = _controls.Player.LeftClick.ReadValue<float>();
         if (_playerCamera == null)
         {
+            Debug.Log("Camera rebuilding");
             _playerCamera = BuildPlayerCameraLookup();
         }
 
         foreach ((RefRW<BuildingBlueprintInputComponent> playerInput, RefRO<LocalToWorld> transform, Entity entity) in SystemAPI.Query<RefRW<BuildingBlueprintInputComponent>, RefRO<LocalToWorld>>().WithAll<GhostOwnerIsLocal>().WithEntityAccess())
         {
-            if (SystemAPI.TryGetSingleton(out NetworkTime networkTime))
-            {
-                Debug.Log($"[Client] Tick: {networkTime.ServerTick}, Position Before: {transform.ValueRO.Position}");
-            }
-            playerInput.ValueRW.MousePos = playerInput.ValueRW.MousePos = ScreenToWorld(mousePos, _playerCamera, transform.ValueRO, SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld);
-            if (SystemAPI.TryGetSingleton(out NetworkTime afterTime))
-            {
-                Debug.Log($"[Client] Tick: {afterTime.ServerTick}, Position After: {transform.ValueRO.Position}");
-            }
+            float3 targetPos = ScreenToWorld(mousePos, _playerCamera, transform.ValueRO, SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld);
+            playerInput.ValueRW.MousePos = targetPos;
             playerInput.ValueRW.LeftClick = leftClick;
         }
     }
