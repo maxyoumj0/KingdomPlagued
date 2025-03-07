@@ -10,12 +10,12 @@ using UnityEngine;
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct BuildingPlacementSystem : ISystem
 {
-    NativeHashSet<int> playerBuildingMode;
+    NativeHashMap<int, Entity> playerBuildingMode;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        playerBuildingMode = new NativeHashSet<int>(100, Allocator.Persistent);
+        playerBuildingMode = new NativeHashMap<int, Entity>(100, Allocator.Persistent);
     }
 
     [BurstCompile]
@@ -45,14 +45,21 @@ partial struct BuildingPlacementSystem : ISystem
                 NetworkId = senderNetworkId
             });
 
-            playerBuildingMode.Add(senderNetworkId);
+            playerBuildingMode.Add(senderNetworkId, buildingBlueprintEntity);
             ecb.DestroyEntity(entity);
         }
 
-        foreach (var (buildingPlacedRpc, receiveRpcCommand, entity) in SystemAPI.Query<RefRO<BuildingPlacedRpc>, RefRO<ReceiveRpcCommandRequest>>().WithEntityAccess())
+        foreach (var (buildingPlacedCommand, entity) in SystemAPI.Query<RefRO<BuildingPlacedComponent>>().WithEntityAccess())
         {
-            int senderNetworkId = SystemAPI.GetComponent<NetworkId>(receiveRpcCommand.ValueRO.SourceConnection).Value;
-            playerBuildingMode.Remove(senderNetworkId);
+            var transform = buildingPlacedCommand.ValueRO.LocalTransform;
+            var buildingEnum = SystemAPI.GetComponent<BuildingBlueprintTagComponent>(playerBuildingMode[buildingPlacedCommand.ValueRO.NetworkId]);
+            playerBuildingMode.Remove(buildingPlacedCommand.ValueRO.NetworkId);
+            ecb.DestroyEntity(playerBuildingMode[buildingPlacedCommand.ValueRO.NetworkId]);
+            Entity buildingPrefabEntity = BuildingPrefabHelper.BuildingEnumToEntity(prefabRefs, buildingEnum.BuildingEnum, false);
+
+            Entity buildingEntity = ecb.Instantiate(buildingPrefabEntity);
+            ecb.SetComponent(buildingEntity, transform);
+
             ecb.DestroyEntity(entity);
         }
 
@@ -62,6 +69,6 @@ partial struct BuildingPlacementSystem : ISystem
     [BurstCompile]
     public void OnDestroy(ref SystemState state)
     {
-        
+        playerBuildingMode.Dispose();
     }
 }

@@ -1,11 +1,9 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Physics;
 using Unity.Transforms;
-using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 partial struct BuildingBlueprintTrackingSystem : ISystem
@@ -26,15 +24,16 @@ partial struct BuildingBlueprintTrackingSystem : ISystem
         {
             if (networkTime.IsFirstTimeFullyPredictingTick)
             {
-                Debug.Log($"[{state.WorldUnmanaged.Name}] Tick: {networkTime.ServerTick.TickValue}, Position: {localTransform.ValueRO.Position}");
                 localTransform.ValueRW.Position = inputComponent.ValueRO.MousePos;
             }
 
-            if (inputComponent.ValueRO.LeftClick == 1.0f)
+            if (inputComponent.ValueRO.LeftClick == 1.0f && state.WorldUnmanaged.IsServer())
             {
                 Entity placeBuildingEntity = ecb.CreateEntity();
-                ecb.AddComponent<BuildingPlacedRpc>(placeBuildingEntity);
-                ecb.AddComponent<SendRpcCommandRequest>(placeBuildingEntity);
+                ecb.AddComponent(placeBuildingEntity, new BuildingPlacedComponent{
+                    NetworkId = blueprintOwner.ValueRO.NetworkId,
+                    LocalTransform = localTransform.ValueRO
+                });
             }
         }
         ecb.Playback(state.EntityManager);

@@ -30,8 +30,7 @@ public partial class BuildingBlueprintInputSystem : SystemBase
 
         foreach ((RefRW<BuildingBlueprintInputComponent> playerInput, RefRO<LocalToWorld> transform, Entity entity) in SystemAPI.Query<RefRW<BuildingBlueprintInputComponent>, RefRO<LocalToWorld>>().WithAll<GhostOwnerIsLocal>().WithEntityAccess())
         {
-            float3 targetPos = ScreenToWorld(mousePos, _playerCamera, transform.ValueRO, SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld);
-            playerInput.ValueRW.MousePos = targetPos;
+            playerInput.ValueRW.MousePos = ScreenToWorld(mousePos, _playerCamera, transform.ValueRO, SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld);
             playerInput.ValueRW.LeftClick = leftClick;
         }
     }
