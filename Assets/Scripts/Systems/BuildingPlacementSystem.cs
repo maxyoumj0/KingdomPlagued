@@ -50,11 +50,11 @@ partial struct BuildingPlacementSystem : ISystem
         {
             int networkId = buildingPlacedCommand.ValueRO.NetworkId;
             BuildingEnum buildingEnum = BuildingEnum.TestBuilding;
-            foreach (var (ghostOwner, blueprintTag, blueprintEntity) in SystemAPI.Query<RefRO<GhostOwner>, RefRO<BuildingBlueprintTagComponent>>().WithEntityAccess())
+            foreach (var (ghostOwner, blueprintTag, blueprintEntity) in SystemAPI.Query<RefRO<GhostOwner>, RefRO<BuildingBlueprintComponent>>().WithEntityAccess())
             {
                 if (ghostOwner.ValueRO.NetworkId == networkId)
                 {
-                    buildingEnum = blueprintTag.ValueRO.BuildingEnum;
+                    buildingEnum = blueprintTag.ValueRO.buildingEnum;
                     ecb.DestroyEntity(blueprintEntity);
                     break;
                 }
