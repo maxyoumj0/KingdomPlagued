@@ -10,12 +10,10 @@ using UnityEngine;
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct BuildingPlacementSystem : ISystem
 {
-    NativeHashMap<int, Entity> playerBuildingMode;
-
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        playerBuildingMode = new NativeHashMap<int, Entity>(100, Allocator.Persistent);
+        
     }
 
     [BurstCompile]
@@ -45,21 +43,27 @@ partial struct BuildingPlacementSystem : ISystem
                 NetworkId = senderNetworkId
             });
 
-            playerBuildingMode.Add(senderNetworkId, buildingBlueprintEntity);
             ecb.DestroyEntity(entity);
         }
 
         foreach (var (buildingPlacedCommand, entity) in SystemAPI.Query<RefRO<BuildingPlacedComponent>>().WithEntityAccess())
         {
-            var transform = buildingPlacedCommand.ValueRO.LocalTransform;
-            var buildingEnum = SystemAPI.GetComponent<BuildingBlueprintTagComponent>(playerBuildingMode[buildingPlacedCommand.ValueRO.NetworkId]);
-            playerBuildingMode.Remove(buildingPlacedCommand.ValueRO.NetworkId);
-            ecb.DestroyEntity(playerBuildingMode[buildingPlacedCommand.ValueRO.NetworkId]);
-            Entity buildingPrefabEntity = BuildingPrefabHelper.BuildingEnumToEntity(prefabRefs, buildingEnum.BuildingEnum, false);
+            int networkId = buildingPlacedCommand.ValueRO.NetworkId;
+            BuildingEnum buildingEnum = BuildingEnum.TestBuilding;
+            foreach (var (ghostOwner, blueprintTag, blueprintEntity) in SystemAPI.Query<RefRO<GhostOwner>, RefRO<BuildingBlueprintTagComponent>>().WithEntityAccess())
+            {
+                if (ghostOwner.ValueRO.NetworkId == networkId)
+                {
+                    buildingEnum = blueprintTag.ValueRO.BuildingEnum;
+                    ecb.DestroyEntity(blueprintEntity);
+                    break;
+                }
+            }
 
+            LocalTransform transform = buildingPlacedCommand.ValueRO.LocalTransform;
+            Entity buildingPrefabEntity = BuildingPrefabHelper.BuildingEnumToEntity(prefabRefs, buildingEnum, false);
             Entity buildingEntity = ecb.Instantiate(buildingPrefabEntity);
             ecb.SetComponent(buildingEntity, transform);
-
             ecb.DestroyEntity(entity);
         }
 
@@ -69,6 +73,6 @@ partial struct BuildingPlacementSystem : ISystem
     [BurstCompile]
     public void OnDestroy(ref SystemState state)
     {
-        playerBuildingMode.Dispose();
+        
     }
 }
