@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -16,6 +17,7 @@ public partial class BuildingBlueprintInputSystem : SystemBase
     {
         _controls = new Controls();
         _controls.Enable();
+        RequireForUpdate<PlayerComponent>();
     }
 
     protected override void OnUpdate()
